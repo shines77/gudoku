@@ -90,12 +90,12 @@ void warm_up(DWORD delayMillsecs)
 #endif // _MSC_VER
 
 struct WarmUp {
-    WarmUp() {
+    WarmUp(unsigned int delayMillsecs = 1000) {
         //
         // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
         //
         std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-        test::CPU::warm_up(1000);
+        test::CPU::warm_up(delayMillsecs);
         std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
     }
 };

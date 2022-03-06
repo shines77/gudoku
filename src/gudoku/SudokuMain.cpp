@@ -67,7 +67,7 @@ using namespace gudoku;
 
 int main(int argc, char * argv[])
 {
-    test::CPU::WarmUp cpuWarnUp;
+    test::CPU::WarmUp cpuWarnUp(1000);
 
     printf("gudoku ver 1.0\n");
     return 0;
