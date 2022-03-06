@@ -49,9 +49,18 @@
 #include <thread>
 #include <chrono>
 
+#include "gudoku/StopWatch.h"
+#include "gudoku/CPUWarmUp.h"
+
 #include "gudoku/gudoku.h"
+#include "gudoku/BitUtils.h"
+
+using namespace gudoku;
 
 int main(int argc, char * argv [])
 {
+    test::CPU::WarmUp cpuWarnUp;
+
+    printf("gudoku benchmark ver 1.0\n");
     return 0;
 }

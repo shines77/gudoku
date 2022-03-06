@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gudoku", "projects\vc2015\gudoku\gudoku.vcxproj", "{379F4E1A-674D-4464-9B00-F70708EE3B9D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "benchmark", "projects\vc2015\benchmark\benchmark.vcxproj", "{59A7AC79-96A6-41D8-901B-129D6D7CF220}"
+	ProjectSection(ProjectDependencies) = postProject
+		{379F4E1A-674D-4464-9B00-F70708EE3B9D} = {379F4E1A-674D-4464-9B00-F70708EE3B9D}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

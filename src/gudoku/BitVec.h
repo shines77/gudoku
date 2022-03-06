@@ -47,11 +47,11 @@
 // For SSE2, SSE3, SSSE3, SSE 4.1, AVX, AVX2
 #if defined(_MSC_VER)
 #include <intrin.h>
-#include "msvc_x86intrin.h"
+#include "gudoku/msvc_x86intrin.h"
 #include <immintrin.h>
 #else
 #include <x86intrin.h>
-#include "msvc_x86intrin.h"
+#include "gudoku/msvc_x86intrin.h"
 #include <avxintrin.h>
 
 #define _mm_cvtss_i32 _mm_cvtss_si32
