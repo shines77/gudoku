@@ -4,11 +4,6 @@ project(gudoku)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-message("------------ Options -------------")
-message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-
-message("----------------------------------")
-
 message("-------------- Env ---------------")
 message("  CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 message("  CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
@@ -75,6 +70,7 @@ endif()
 
 message("------------ Options -------------")
 message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message("----------------------------------")
 
 add_executable(gudoku ${SOURCE_FILES})
 target_link_libraries(gudoku ${EXTRA_LIBS})
