@@ -64,7 +64,7 @@ include_directories(include)
 include_directories(src)
 
 set(SOURCE_FILES
-    src/gzSudoku/SudokuMain.cpp
+    src/gudoku/SudokuMain.cpp
     )
 
 add_custom_target(release
@@ -73,16 +73,17 @@ add_custom_target(release
     COMMENT "Switch CMAKE_BUILD_TYPE to Release"
 )
 
-add_executable(gzSudoku ${SOURCE_FILES})
+add_executable(gudoku ${SOURCE_FILES})
 target_link_libraries(gudoku ${EXTRA_LIBS})
 
 project(benchmark)
 
 include_directories(include)
 include_directories(src)
+include_directories(src/benchmark)
 
 set(SOURCE_FILES
-    src/gzSudoku/BenchmarkMain.cpp
+    src/benchmark/BenchmarkMain.cpp
     )
 
 add_custom_target(release
