@@ -1,0 +1,18 @@
+
+Windows:
+
+.\benchmark.exe ..\..\..\data\puzzles2_17_clue
+.\benchmark.exe ..\..\..\data\puzzles_17_clue_49151
+.\benchmark.exe ..\..\..\data\puzzles5_forum_hardest_1905_11+
+
+Linux:
+
+./benchmark ./data/puzzles2_17_clue
+./benchmark ./data/puzzles_17_clue_49151
+./benchmark ./data/puzzles5_forum_hardest_1905_11+
+
+clang:
+
+./benchmark ../data/puzzles2_17_clue
+./benchmark ../data/puzzles_17_clue_49151
+./benchmark ../data/puzzles5_forum_hardest_1905_11+
