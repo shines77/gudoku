@@ -69,6 +69,9 @@ add_custom_target(release
     COMMENT "Switch CMAKE_BUILD_TYPE to Release"
 )
 
+message("------------ Options -------------")
+message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
 add_executable(gudoku ${SOURCE_FILES})
 target_link_libraries(gudoku ${EXTRA_LIBS})
 
