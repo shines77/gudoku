@@ -31,8 +31,8 @@ namespace gudoku {
 
 class DpllTriadSimdSolver : public BasicSolver {
 public:
-    intptr_t solve() {
-        //
+    size_t solve(const char * puzzle, char * solution, size_t limit) {
+        this->set_num_guesses(0);
         return 0;
     }
 };

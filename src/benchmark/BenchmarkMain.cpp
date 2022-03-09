@@ -57,7 +57,6 @@
 
 #include "gudoku/DpllTriadSimdSolver.h"
 
-#include "gudoku/BasicSolver.hpp"
 #include "gudoku/Sudoku.hpp"
 
 using namespace gudoku;
@@ -68,8 +67,11 @@ int main(int argc, char * argv [])
 
     printf("gudoku benchmark ver 1.0\n");
 
-    DpllTriadSimdSolver solver;
-    solver.solve();
+    char puzzle[81] = { 0 };
+    char solution[81] = { 0 };
 
+    DpllTriadSimdSolver solver;
+    size_t solutions = solver.solve(puzzle, solution, 1);
+    size_t num_guesses = solver.get_num_guesses();
     return 0;
 }

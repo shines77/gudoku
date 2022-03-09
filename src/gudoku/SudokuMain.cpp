@@ -49,6 +49,16 @@
 #include <thread>
 #include <chrono>
 
+#ifndef GUDOKU_NO_MAIN
+#if defined(GUDOKU_SOLVER) || defined(STATIC_LIB) || defined(SHARED_DLL)
+#define GUDOKU_NO_MAIN  1
+#else
+#define GUDOKU_NO_MAIN  0
+#endif
+#endif // GUDOKU_NO_MAIN
+
+#if (GUDOKU_NO_MAIN == 0)
+
 #include "gudoku/CPUWarmUp.h"
 #include "gudoku/StopWatch.h"
 
@@ -57,27 +67,22 @@
 
 #include "gudoku/DpllTriadSimdSolver.h"
 
-#include "gudoku/BasicSolver.hpp"
 #include "gudoku/Sudoku.hpp"
 
 using namespace gudoku;
-
-#if defined(GUDOKU_SOLVER) || defined(STATIC_LIB) || defined(SHARED_DLL)
-#define GUDOKU_NO_MAIN  1
-#else
-#define GUDOKU_NO_MAIN  0
-#endif
-
-#if (GUDOKU_NO_MAIN == 0)
 
 int main(int argc, char * argv[])
 {
     test::CPU::WarmUp cpuWarnUp(1000);
 
-    printf("gudoku ver 1.0\n");
+    printf("gudoku solver ver 1.0\n");
+
+    char puzzle[81] = { 0 };
+    char solution[81] = { 0 };
 
     DpllTriadSimdSolver solver;
-    solver.solve();
+    size_t solutions = solver.solve(puzzle, solution, 1);
+    size_t num_guesses = solver.get_num_guesses();
 
     return 0;
 }

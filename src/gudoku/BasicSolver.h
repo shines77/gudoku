@@ -22,14 +22,6 @@ class BasicSolver {
 public:
     typedef BasicSolver this_type;
 
-    static const size_t kAlignment = Sudoku::kAlignment;
-    static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
-    static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
-    static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
-    static const size_t BoxCountY = Sudoku::kBoxCountY;      // 3
-    static const size_t MinNumber = Sudoku::kMinNumber;      // 1
-    static const size_t MaxNumber = Sudoku::kMaxNumber;      // 9
-
     static const size_t Rows = Sudoku::kRows;
     static const size_t Cols = Sudoku::kCols;
     static const size_t Boxes = Sudoku::kBoxes;
@@ -38,24 +30,21 @@ public:
 
     static const size_t BoardSize = Sudoku::kBoardSize;
     static const size_t TotalSize = Sudoku::kTotalSize;
-    static const size_t Neighbors = Sudoku::kNeighbors;
 
-    static size_t num_guesses;
+protected:
+    size_t num_guesses_;
 
 public:
-    BasicSolver() {
-        //this->init_statistics();
+    BasicSolver() : num_guesses_(0) {
     }
     ~BasicSolver() {}
 
-    static size_t get_num_guesses() { return this_type::num_guesses; }
+    size_t get_num_guesses() { return this->num_guesses_; }
 
-private:
-    void init_statistics() {
-        num_guesses = 0;
+    void set_num_guesses(size_t num_guesses) {
+        this->num_guesses_ = num_guesses;
     }
 
-public:
     static size_t calc_empties(const Board & board) {
         size_t empties = 0;
         for (size_t pos = 0; pos < BoardSize; pos++) {
@@ -72,14 +61,14 @@ public:
     }
 
     template <size_t nSearchMode = SearchMode::OneSolution>
-    static void display_result(Board & board, double elapsed_time,
-                               bool print_answer = true,
-                               bool print_all_answers = true) {
+    void display_result(Board & board, double elapsed_time,
+                        bool print_answer = true,
+                        bool print_all_answers = true) {
         if (print_answer) {
             Sudoku::display_board(board);
         }
         printf("elapsed time: %0.3f ms, num_guesses: %" PRIuPTR "\n\n",
-                elapsed_time, this_type::get_num_guesses());
+                elapsed_time, this->get_num_guesses());
     }
 };
 

@@ -24,7 +24,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\gudoku\BasicSolver.h" />
-    <ClInclude Include="..\..\..\src\gudoku\BasicSolver.hpp" />
     <ClInclude Include="..\..\..\src\gudoku\BitArray.h" />
     <ClInclude Include="..\..\..\src\gudoku\BitSet.h" />
     <ClInclude Include="..\..\..\src\gudoku\BitUtils.h" />
