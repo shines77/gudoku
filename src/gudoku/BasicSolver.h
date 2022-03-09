@@ -33,16 +33,26 @@ public:
 
 protected:
     size_t num_guesses_;
+    size_t num_solutions_;
+    size_t limit_solutions_;
 
 public:
-    BasicSolver() : num_guesses_(0) {
+    BasicSolver() : num_guesses_(0), num_solutions_(0), limit_solutions_(0) {
     }
     ~BasicSolver() {}
 
     size_t get_num_guesses() { return this->num_guesses_; }
+    size_t get_num_solutions() { return this->num_solutions_; }
+    size_t get_limit_solutions() { return this->limit_solutions_; }
 
     void set_num_guesses(size_t num_guesses) {
         this->num_guesses_ = num_guesses;
+    }
+    void set_num_solutions(size_t num_solutions) {
+        this->num_solutions_ = num_solutions;
+    }
+    void set_limit_solutions(size_t limit_solutions) {
+        this->limit_solutions_ = limit_solutions;
     }
 
     static size_t calc_empties(const Board & board) {

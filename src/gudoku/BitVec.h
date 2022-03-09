@@ -2946,6 +2946,138 @@ typedef BitVec16x16_AVX BitVec16x16;
 
 #endif // __AVX2__
 
+template <bool isAligned = false>
+static inline
+uint32_t whichIsDots16(const char * p) {
+    const __m128i dots = _mm_set1_epi8('.');
+    const __m128i src;
+    if (isAligned)
+        src = _mm_load_si128((const __m128i *)p);
+    else
+        src = _mm_loadu_si128((const __m128i *)p);
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    return (uint32_t)_mm_cmpeq_epi8_mask(src, dots);
+#else
+    __m128i cmp_mask = _mm_cmpeq_epi8(src, dots);
+    return (uint32_t)_mm_movemask_epi8(cmp_mask);
+#endif
+}
+
+template <bool isAligned = false>
+static inline
+uint32_t whichIsDots32(const char * p) {
+#if defined(__AVX2__)
+    const __m256i dots = _mm256_set1_epi8('.');
+    const __m256i src;
+    if (isAligned)
+        src = _mm256_load_si256((const __m256i *)p);
+    else
+        src = _mm256_loadu_si256((const __m256i *)p);
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    return (uint32_t)_mm256_cmpeq_epi8_mask(src, dots);
+#else
+    __m256i cmp_mask = _mm256_cmpeq_epi8(src, dots);
+    return (uint32_t)_mm256_movemask_epi8(cmp_mask);
+#endif
+#else // !__AVX2__
+    const __m128i dots = _mm_set1_epi8('.');
+    const __m128i src0, src1;
+    if (isAligned) {
+        src0 = _mm_load_si128((const __m128i *)(p + 0));
+        src1 = _mm_load_si128((const __m128i *)(p + 16));
+    }
+    else {
+        src0 = _mm_loadu_si128((const __m128i *)(p + 0));
+        src1 = _mm_loadu_si128((const __m128i *)(p + 16));
+    }
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    uint32_t low_mask  = (uint32_t)_mm_cmpeq_epi8_mask(src0, dots);
+    uint32_t high_mask = (uint32_t)_mm_cmpeq_epi8_mask(src1, dots);
+#else
+    __m128i cmp_mask_low  = _mm_cmpeq_epi8(src0, dots);
+    __m128i cmp_mask_high = _mm_cmpeq_epi8(src1, dots);
+    uint32_t low_mask  = (uint32_t)_mm_movemask_epi8(cmp_mask_low);
+    uint32_t high_mask = (uint32_t)_mm_movemask_epi8(cmp_mask_high);
+#endif
+    return (low_mask | (high_mask << 16U));
+#endif // __AVX2__
+}
+
+template <bool isAligned = false>
+static inline
+uint64_t whichIsDots64(const char * p) {
+#if defined(__AVX512F__) && defined(__AVX512BW__)
+    const __m512i dots = _mm512_set1_epi8('.');
+    const __m512i src;
+    if (isAligned)
+        src = _mm512_load_si512((const __m512i *)p);
+    else
+        src = _mm512_loadu_si512((const __m512i *)p);
+
+    return (uint32_t)_mm512_cmpeq_epi8_mask(src, dots);
+
+#elif defined(__AVX2__)
+    const __m256i dots = _mm256_set1_epi8('.');
+    const __m256i src0, src1;
+    if (isAligned) {
+        src0 = _mm256_load_si256((const __m256i *)(p + 0));
+        src1 = _mm256_load_si256((const __m256i *)(p + 32));
+    }
+    else {
+        src0 = _mm256_loadu_si256((const __m256i *)(p + 0));
+        src1 = _mm256_loadu_si256((const __m256i *)(p + 32));
+    }
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    uint32_t low_mask  = (uint32_t)_mm256_cmpeq_epi8_mask(src0, dots);
+    uint32_t high_mask = (uint32_t)_mm256_cmpeq_epi8_mask(src1, dots);
+#else
+    __m256i cmp_mask_low  = _mm256_cmpeq_epi8(src0, dots);
+    __m256i cmp_mask_high = _mm256_cmpeq_epi8(src1, dots);
+    uint32_t low_mask  = (uint32_t)_mm256_movemask_epi8(cmp_mask_low);
+    uint32_t high_mask = (uint32_t)_mm256_movemask_epi8(cmp_mask_high);
+#endif
+    return ((uint64_t)low_mask | ((uint64_t)high_mask << 32U));
+
+#else // !__AVX512F__ && !__AVX2__
+    const __m128i dots = _mm_set1_epi8('.');
+    const __m128i src0, src1, src2, src3;
+    if (isAligned) {
+        src0 = _mm_load_si128((const __m128i *)(p + 0));
+        src1 = _mm_load_si128((const __m128i *)(p + 16));
+        src2 = _mm_load_si128((const __m128i *)(p + 32));
+        src3 = _mm_load_si128((const __m128i *)(p + 48));
+    }
+    else {
+        src0 = _mm_loadu_si128((const __m128i *)(p + 0));
+        src1 = _mm_loadu_si128((const __m128i *)(p + 16));
+        src2 = _mm_loadu_si128((const __m128i *)(p + 32));
+        src3 = _mm_loadu_si128((const __m128i *)(p + 48));
+    }
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    uint32_t dot_mask_0 = (uint32_t)_mm_cmpeq_epi8_mask(src0, cmp_mask_0);
+    uint32_t dot_mask_1 = (uint32_t)_mm_cmpeq_epi8_mask(src1, cmp_mask_1);
+    uint32_t dot_mask_2 = (uint32_t)_mm_cmpeq_epi8_mask(src2, cmp_mask_2);
+    uint32_t dot_mask_3 = (uint32_t)_mm_cmpeq_epi8_mask(src3, cmp_mask_3);
+#else
+    __m128i cmp_mask_0 = _mm_cmpeq_epi8(src0, dots);
+    __m128i cmp_mask_1 = _mm_cmpeq_epi8(src1, dots);
+    __m128i cmp_mask_2 = _mm_cmpeq_epi8(src2, dots);
+    __m128i cmp_mask_3 = _mm_cmpeq_epi8(src3, dots);
+    uint32_t dot_mask_0 = (uint32_t)_mm_movemask_epi8(cmp_mask_0);
+    uint32_t dot_mask_1 = (uint32_t)_mm_movemask_epi8(cmp_mask_1);
+    uint32_t dot_mask_2 = (uint32_t)_mm_movemask_epi8(cmp_mask_2);
+    uint32_t dot_mask_3 = (uint32_t)_mm_movemask_epi8(cmp_mask_3);
+#endif
+    return ( (uint64_t)dot_mask_0         | ((uint64_t)dot_mask_1 << 16U) |
+            ((uint64_t)dot_mask_2 << 32U) | ((uint64_t)dot_mask_3 << 48U));
+#endif // __AVX512F__
+}
+
 } // namespace gudoku
 
 #endif // GUDOKU_BITVEC_H
