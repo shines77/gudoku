@@ -197,6 +197,23 @@ struct BitUtils {
     //
     // The most significant 1 bit (MSB)
     //
+    // TODO: ms1b32(), ms1b64(), ms1b()
+    //
+
+    //
+    // Clear the least significant 1 bit (LSB)
+    //
+    static inline uint32_t clearLowBit32(uint32_t x) {
+        return (x & (uint32_t)(x - 1));
+    }
+
+    static inline uint64_t clearLowBit64(uint64_t x) {
+        return (x & (uint64_t)(x - 1));
+    }
+
+    static inline size_t clearLowBit(size_t x) {
+        return (x & (size_t)(x - 1));
+    }
 
 #ifdef _MSC_VER
 #pragma warning (pop)
@@ -220,6 +237,22 @@ struct BitUtils {
         ::_BitScanForward64(&index, x);
         return (unsigned int)index;
     }
+#else
+    static inline
+    unsigned int bsf64(unsigned __int64 x) {
+        assert(x != 0);
+        unsigned int index;
+        unsigned int low = (unsigned int)(x & 0xFFFFFFFFU);
+        if (low != 0) {
+            index = bsf32(low);
+        }
+        else {
+            unsigned int high = (unsigned int)(x >> 32U);
+            assert(high != 0);
+            index = bsf32(high);
+        }
+        return index;
+    }
 #endif
 
     static inline
@@ -237,6 +270,22 @@ struct BitUtils {
         unsigned long index;
         ::_BitScanReverse64(&index, x);
         return (unsigned int)index;
+    }
+#else
+    static inline
+    unsigned int bsr64(unsigned __int64 x) {
+        assert(x != 0);
+        unsigned int index;
+        unsigned int high = (unsigned int)(x >> 32U);
+        if (high != 0) {
+            index = bsr32(high);
+        }
+        else {
+            unsigned int low = (unsigned int)(x & 0xFFFFFFFFU);
+            assert(low != 0);
+            index = bsr32(low);
+        }
+        return index;
     }
 #endif
 
@@ -293,6 +342,22 @@ struct BitUtils {
         // gcc: __bsfq(x)
         return (unsigned int)__builtin_ctzll(x);
     }
+#else
+    static inline
+    unsigned int bsf64(unsigned long long x) {
+        assert(x != 0);
+        unsigned int index;
+        unsigned int low = (unsigned int)(x & 0xFFFFFFFFU);
+        if (low != 0) {
+            index = bsf32(low);
+        }
+        else {
+            unsigned int high = (unsigned int)(x >> 32U);
+            assert(high != 0);
+            index = bsf32(high);
+        }
+        return index;
+    }
 #endif
 
     static inline
@@ -308,6 +373,22 @@ struct BitUtils {
         assert(x != 0);
         // gcc: __bsrq(x)
         return (unsigned int)__builtin_clzll(x);
+    }
+#else
+    static inline
+    unsigned int bsf64(unsigned long long x) {
+        assert(x != 0);
+        unsigned int index;
+        unsigned int high = (unsigned int)(x >> 32U);
+        if (high != 0) {
+            index = bsf32(high);
+        }
+        else {
+            unsigned int low = (unsigned int)(x & 0xFFFFFFFFU);
+            assert(low != 0);
+            index = bsf32(low);
+        }
+        return index;
     }
 #endif
 

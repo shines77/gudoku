@@ -158,6 +158,18 @@ union alignas(32) IntVec256 {
 
 #pragma pack(pop)
 
+// Postfix-named specifications for three-operand boolean functions to use with ternarylogic intrinsics.
+//
+//                                X   11110000
+//                                Y   11001100
+//                                Z   10101010
+//                               ----------------
+static const int OP_X_and_Y_or_Z    = 0b11101010;
+static const int OP_X_andnot_Y_or_Z = 0b10111010;
+static const int OP_X_or_Y_or_Z     = 0b11111110;
+static const int OP_X_xor_Y_or_Z    = 0b10111110;
+
+
 bool check_alignment(void * address, size_t alignment)
 {
     uintptr_t ptr = (uintptr_t)address;
@@ -449,21 +461,58 @@ struct BitVec08x16 {
         return *this;
     }
 
+    static inline BitVec08x16
+    X_and_Y_or_Z(const BitVec08x16 & x, const BitVec08x16 & y, const BitVec08x16 & z) {
+#if defined(__AVX512VL__) && defined(_AVX512F__)
+        return _mm_ternarylogic_epi32(x.m128, y.m128, z.m128, OP_X_and_Y_or_Z);
+#else
+        BitVec08x16 result = x;
+        return (result & y) | z;
+#endif
+    }
+
+    static inline BitVec08x16
+    X_or_Y_or_Z(const BitVec08x16 & x, const BitVec08x16 & y, const BitVec08x16 & z) {
+#if defined(__AVX512VL__) && defined(_AVX512F__)
+        return _mm_ternarylogic_epi32(x.m128, y.m128, z.m128, OP_X_or_Y_or_Z);
+#else
+        BitVec08x16 result = x;
+        return (result | y | z);
+#endif
+    }
+
     // fill
-    inline void fill_u8(uint8_t value) {
+    inline void fill8(uint8_t value) {
         this->m128 = _mm_set1_epi8(value);       // SSE2
     }
 
-    inline void fill_u16(uint16_t value) {
+    inline void fill16(uint16_t value) {
         this->m128 = _mm_set1_epi16(value);      // SSE2
     }
 
-    inline void fill_u32(uint32_t value) {
+    inline void fill32(uint32_t value) {
         this->m128 = _mm_set1_epi32(value);      // SSE2
     }
 
-    inline void fill_u64(uint64_t value) {
+    inline void fill64(uint64_t value) {
         this->m128 = _mm_set1_epi64x(value);     // SSE2
+    }
+
+    // full
+    static inline BitVec08x16 full8(uint8_t value) {
+        return _mm_set1_epi8(value);       // SSE2
+    }
+
+    static inline BitVec08x16 full16(uint16_t value) {
+        return _mm_set1_epi16(value);      // SSE2
+    }
+
+    static inline BitVec08x16 full32(uint32_t value) {
+        return _mm_set1_epi32(value);      // SSE2
+    }
+
+    static inline BitVec08x16 full64(uint64_t value) {
+        return _mm_set1_epi64x(value);     // SSE2
     }
 
     static bool isMemEqual(const void * mem_addr_1, const void * mem_addr_2) {
@@ -1298,25 +1347,70 @@ struct BitVec16x16 {
         return *this;
     }
 
+    static inline
+    BitVec16x16 X_and_Y_or_Z(const BitVec16x16 & x, const BitVec16x16 & y, const BitVec16x16 & z) {
+        BitVec08x16 x_low  = x.low;
+        BitVec08x16 x_high = x.high;
+        return BitVec16x16((x_low & y.low) | z.low, (x_high & y.high) | z.high);
+    }
+
+    static inline
+    BitVec16x16 X_andnot_Y_or_Z(const BitVec16x16 & x, const BitVec16x16 & y, const BitVec16x16 & z) {
+        BitVec08x16 x_low  = x.low;
+        BitVec08x16 x_high = x.high;
+        return BitVec16x16(x_low.and_not(y.low) | z.low, x_high.and_not(y.high) | z.high);
+    }
+
+    static inline
+    BitVec16x16 X_or_Y_or_Z(const BitVec16x16 & x, const BitVec16x16 & y, const BitVec16x16 & z) {
+        BitVec08x16 x_low  = x.low;
+        BitVec08x16 x_high = x.high;
+        return BitVec16x16(x_low | y.low | z.low, x_high | y.high | z.high);
+    }
+
+    static inline
+    BitVec16x16 X_xor_Y_or_Z(const BitVec16x16 & x, const BitVec16x16 & y, const BitVec16x16 & z) {
+        BitVec08x16 x_low  = x.low;
+        BitVec08x16 x_high = x.high;
+        return BitVec16x16((x_low ^ y.low) | z.low, (x_high ^ y.high) | z.high);
+    }
+
     // fill
-    inline void fill_u8(uint8_t value) {
-        this->low.fill_u8(value);
-        this->high.fill_u8(value);
+    inline void fill8(uint8_t value) {
+        this->low.fill8(value);
+        this->high.fill8(value);
     }
 
-    inline void fill_u16(uint16_t value) {
-        this->low.fill_u16(value);
-        this->high.fill_u16(value);
+    inline void fill16(uint16_t value) {
+        this->low.fill16(value);
+        this->high.fill16(value);
     }
 
-    inline void fill_u32(uint32_t value) {
-        this->low.fill_u32(value);
-        this->high.fill_u32(value);
+    inline void fill32(uint32_t value) {
+        this->low.fill32(value);
+        this->high.fill32(value);
     }
 
-    inline void fill_u64(uint64_t value) {
-        this->low.fill_u64(value);
-        this->high.fill_u64(value);
+    inline void fill64(uint64_t value) {
+        this->low.fill64(value);
+        this->high.fill64(value);
+    }
+
+    // full
+    static inline BitVec16x16 full8(uint8_t value) {
+        return BitVec16x16(_mm_set1_epi8(value), _mm_set1_epi8(value));
+    }
+
+    static inline BitVec16x16 full16(uint16_t value) {
+        return BitVec16x16(_mm_set1_epi16(value), _mm_set1_epi16(value));
+    }
+
+    static inline BitVec16x16 full32(uint32_t value) {
+        return BitVec16x16(_mm_set1_epi32(value), _mm_set1_epi32(value));
+    }
+
+    static inline BitVec16x16 full64(uint64_t value) {
+        return BitVec16x16(_mm_set1_epi64x(value), _mm_set1_epi64x(value));
     }
 
     static bool isMemEqual(const void * mem_addr_1, const void * mem_addr_2) {
@@ -2279,21 +2373,78 @@ struct BitVec16x16_AVX {
         return *this;
     }
 
+    static inline BitVec16x16_AVX
+    X_and_Y_or_Z(const BitVec16x16_AVX & x, const BitVec16x16_AVX & y, const BitVec16x16_AVX & z) {
+#if defined(__AVX512F__) && defined(__AVX512VL__)
+        return _mm256_ternarylogic_epi32(x.m256, y.m256, z.m256, OP_X_and_Y_or_Z);
+#else
+        BitVec16x16_AVX tmp = x;
+        return ((tmp & y) | z);
+#endif
+    }
+
+    static inline BitVec16x16_AVX
+    X_andnot_Y_or_Z(const BitVec16x16_AVX & x, const BitVec16x16_AVX & y, const BitVec16x16_AVX & z) {
+#if defined(__AVX512F__) && defined(__AVX512VL__)
+        return _mm256_ternarylogic_epi32(x.m256, y.m256, z.m256, OP_X_andnot_Y_or_Z);
+#else
+        BitVec16x16_AVX tmp = x;
+        return tmp.and_not(y) | z;
+#endif
+    }
+
+    static inline BitVec16x16_AVX
+    X_or_Y_or_Z(const BitVec16x16_AVX & x, const BitVec16x16_AVX & y, const BitVec16x16_AVX & z) {
+#if defined(__AVX512F__) && defined(__AVX512VL__)
+        return _mm256_ternarylogic_epi32(x.m256, y.m256, z.m256, OP_X_or_Y_or_Z);
+#else
+        BitVec16x16_AVX tmp = x;
+        return (tmp | y | z);
+#endif
+    }
+
+    static inline BitVec16x16_AVX
+    X_xor_Y_or_Z(const BitVec16x16_AVX & x, const BitVec16x16_AVX & y, const BitVec16x16_AVX & z) {
+#if defined(__AVX512F__) && defined(__AVX512VL__)
+        return _mm256_ternarylogic_epi32(x.m256, y.m256, z.m256, OP_X_xor_Y_or_Z);
+#else
+        BitVec16x16_AVX tmp = x;
+        return ((tmp ^ y) | z);
+#endif
+    }
+
     // fill
-    inline void fill_u8(uint8_t value) {
+    inline void fill8(uint8_t value) {
         this->m256 = _mm256_set1_epi8(value);
     }
 
-    inline void fill_u16(uint16_t value) {
+    inline void fill16(uint16_t value) {
         this->m256 = _mm256_set1_epi16(value);
     }
 
-    inline void fill_u32(uint32_t value) {
+    inline void fill32(uint32_t value) {
         this->m256 = _mm256_set1_epi32(value);
     }
 
-    inline void fill_u64(uint64_t value) {
+    inline void fill64(uint64_t value) {
         this->m256 = _mm256_set1_epi64x(value);
+    }
+
+    // full
+    static inline BitVec16x16_AVX full8(uint8_t value) {
+        return _mm256_set1_epi8(value);       // AVX
+    }
+
+    static inline BitVec16x16_AVX full16(uint16_t value) {
+        return _mm256_set1_epi16(value);      // AVX
+    }
+
+    static inline BitVec16x16_AVX full32(uint32_t value) {
+        return _mm256_set1_epi32(value);      // AVX
+    }
+
+    static inline BitVec16x16_AVX full64(uint64_t value) {
+        return _mm256_set1_epi64x(value);     // AVX
     }
 
     static bool isMemEqual(const void * mem_addr_1, const void * mem_addr_2) {
@@ -2946,11 +3097,15 @@ typedef BitVec16x16_AVX BitVec16x16;
 
 #endif // __AVX2__
 
+////////////////////////////////////////////////////////////
+////////////////////   whichIsDots##   /////////////////////
+////////////////////////////////////////////////////////////
+
 template <bool isAligned = false>
 static inline
 uint32_t whichIsDots16(const char * p) {
     const __m128i dots = _mm_set1_epi8('.');
-    const __m128i src;
+    __m128i src;
     if (isAligned)
         src = _mm_load_si128((const __m128i *)p);
     else
@@ -2969,7 +3124,7 @@ static inline
 uint32_t whichIsDots32(const char * p) {
 #if defined(__AVX2__)
     const __m256i dots = _mm256_set1_epi8('.');
-    const __m256i src;
+    __m256i src;
     if (isAligned)
         src = _mm256_load_si256((const __m256i *)p);
     else
@@ -2983,7 +3138,7 @@ uint32_t whichIsDots32(const char * p) {
 #endif
 #else // !__AVX2__
     const __m128i dots = _mm_set1_epi8('.');
-    const __m128i src0, src1;
+    __m128i src0, src1;
     if (isAligned) {
         src0 = _mm_load_si128((const __m128i *)(p + 0));
         src1 = _mm_load_si128((const __m128i *)(p + 16));
@@ -3011,7 +3166,7 @@ static inline
 uint64_t whichIsDots64(const char * p) {
 #if defined(__AVX512F__) && defined(__AVX512BW__)
     const __m512i dots = _mm512_set1_epi8('.');
-    const __m512i src;
+    __m512i src;
     if (isAligned)
         src = _mm512_load_si512((const __m512i *)p);
     else
@@ -3021,7 +3176,7 @@ uint64_t whichIsDots64(const char * p) {
 
 #elif defined(__AVX2__)
     const __m256i dots = _mm256_set1_epi8('.');
-    const __m256i src0, src1;
+    __m256i src0, src1;
     if (isAligned) {
         src0 = _mm256_load_si256((const __m256i *)(p + 0));
         src1 = _mm256_load_si256((const __m256i *)(p + 32));
@@ -3044,7 +3199,7 @@ uint64_t whichIsDots64(const char * p) {
 
 #else // !__AVX512F__ && !__AVX2__
     const __m128i dots = _mm_set1_epi8('.');
-    const __m128i src0, src1, src2, src3;
+    __m128i src0, src1, src2, src3;
     if (isAligned) {
         src0 = _mm_load_si128((const __m128i *)(p + 0));
         src1 = _mm_load_si128((const __m128i *)(p + 16));
@@ -3068,6 +3223,142 @@ uint64_t whichIsDots64(const char * p) {
     __m128i cmp_mask_1 = _mm_cmpeq_epi8(src1, dots);
     __m128i cmp_mask_2 = _mm_cmpeq_epi8(src2, dots);
     __m128i cmp_mask_3 = _mm_cmpeq_epi8(src3, dots);
+    uint32_t dot_mask_0 = (uint32_t)_mm_movemask_epi8(cmp_mask_0);
+    uint32_t dot_mask_1 = (uint32_t)_mm_movemask_epi8(cmp_mask_1);
+    uint32_t dot_mask_2 = (uint32_t)_mm_movemask_epi8(cmp_mask_2);
+    uint32_t dot_mask_3 = (uint32_t)_mm_movemask_epi8(cmp_mask_3);
+#endif
+    return ( (uint64_t)dot_mask_0         | ((uint64_t)dot_mask_1 << 16U) |
+            ((uint64_t)dot_mask_2 << 32U) | ((uint64_t)dot_mask_3 << 48U));
+#endif // __AVX512F__
+}
+
+////////////////////////////////////////////////////////////
+///////////////////   whichIsNotDots##   ///////////////////
+////////////////////////////////////////////////////////////
+
+template <bool isAligned = false>
+static inline
+uint32_t whichIsNotDots16(const char * p) {
+    const __m128i dots = _mm_set1_epi8('.');
+    __m128i src;
+    if (isAligned)
+        src = _mm_load_si128((const __m128i *)p);
+    else
+        src = _mm_loadu_si128((const __m128i *)p);
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    return (uint32_t)_mm_cmpneq_epi8_mask(src, dots);
+#else
+    __m128i cmp_mask = _mm_cmpgt_epi8(src, dots);
+    return (uint32_t)_mm_movemask_epi8(cmp_mask);
+#endif
+}
+
+template <bool isAligned = false>
+static inline
+uint32_t whichIsNotDots32(const char * p) {
+#if defined(__AVX2__)
+    const __m256i dots = _mm256_set1_epi8('.');
+    __m256i src;
+    if (isAligned)
+        src = _mm256_load_si256((const __m256i *)p);
+    else
+        src = _mm256_loadu_si256((const __m256i *)p);
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    return (uint32_t)_mm256_cmpneq_epi8_mask(src, dots);
+#else
+    __m256i cmp_mask = _mm256_cmpgt_epi8(src, dots);
+    return (uint32_t)_mm256_movemask_epi8(cmp_mask);
+#endif
+#else // !__AVX2__
+    const __m128i dots = _mm_set1_epi8('.');
+    __m128i src0, src1;
+    if (isAligned) {
+        src0 = _mm_load_si128((const __m128i *)(p + 0));
+        src1 = _mm_load_si128((const __m128i *)(p + 16));
+    }
+    else {
+        src0 = _mm_loadu_si128((const __m128i *)(p + 0));
+        src1 = _mm_loadu_si128((const __m128i *)(p + 16));
+    }
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    uint32_t low_mask  = (uint32_t)_mm_cmpneq_epi8_mask(src0, dots);
+    uint32_t high_mask = (uint32_t)_mm_cmpneq_epi8_mask(src1, dots);
+#else
+    __m128i cmp_mask_low  = _mm_cmpgt_epi8(src0, dots);
+    __m128i cmp_mask_high = _mm_cmpgt_epi8(src1, dots);
+    uint32_t low_mask  = (uint32_t)_mm_movemask_epi8(cmp_mask_low);
+    uint32_t high_mask = (uint32_t)_mm_movemask_epi8(cmp_mask_high);
+#endif
+    return (low_mask | (high_mask << 16U));
+#endif // __AVX2__
+}
+
+template <bool isAligned = false>
+static inline
+uint64_t whichIsNotDots64(const char * p) {
+#if defined(__AVX512F__) && defined(__AVX512BW__)
+    const __m512i dots = _mm512_set1_epi8('.');
+    __m512i src;
+    if (isAligned)
+        src = _mm512_load_si512((const __m512i *)p);
+    else
+        src = _mm512_loadu_si512((const __m512i *)p);
+
+    return (uint32_t)_mm512_cmpneq_epi8_mask(src, dots);
+
+#elif defined(__AVX2__)
+    const __m256i dots = _mm256_set1_epi8('.');
+    __m256i src0, src1;
+    if (isAligned) {
+        src0 = _mm256_load_si256((const __m256i *)(p + 0));
+        src1 = _mm256_load_si256((const __m256i *)(p + 32));
+    }
+    else {
+        src0 = _mm256_loadu_si256((const __m256i *)(p + 0));
+        src1 = _mm256_loadu_si256((const __m256i *)(p + 32));
+    }
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    uint32_t low_mask  = (uint32_t)_mm256_cmpneq_epi8_mask(src0, dots);
+    uint32_t high_mask = (uint32_t)_mm256_cmpneq_epi8_mask(src1, dots);
+#else
+    __m256i cmp_mask_low  = _mm256_cmpgt_epi8(src0, dots);
+    __m256i cmp_mask_high = _mm256_cmpgt_epi8(src1, dots);
+    uint32_t low_mask  = (uint32_t)_mm256_movemask_epi8(cmp_mask_low);
+    uint32_t high_mask = (uint32_t)_mm256_movemask_epi8(cmp_mask_high);
+#endif
+    return ((uint64_t)low_mask | ((uint64_t)high_mask << 32U));
+
+#else // !__AVX512F__ && !__AVX2__
+    const __m128i dots = _mm_set1_epi8('.');
+    __m128i src0, src1, src2, src3;
+    if (isAligned) {
+        src0 = _mm_load_si128((const __m128i *)(p + 0));
+        src1 = _mm_load_si128((const __m128i *)(p + 16));
+        src2 = _mm_load_si128((const __m128i *)(p + 32));
+        src3 = _mm_load_si128((const __m128i *)(p + 48));
+    }
+    else {
+        src0 = _mm_loadu_si128((const __m128i *)(p + 0));
+        src1 = _mm_loadu_si128((const __m128i *)(p + 16));
+        src2 = _mm_loadu_si128((const __m128i *)(p + 32));
+        src3 = _mm_loadu_si128((const __m128i *)(p + 48));
+    }
+
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+    uint32_t dot_mask_0 = (uint32_t)_mm_cmpneq_epi8_mask(src0, cmp_mask_0);
+    uint32_t dot_mask_1 = (uint32_t)_mm_cmpneq_epi8_mask(src1, cmp_mask_1);
+    uint32_t dot_mask_2 = (uint32_t)_mm_cmpneq_epi8_mask(src2, cmp_mask_2);
+    uint32_t dot_mask_3 = (uint32_t)_mm_cmpneq_epi8_mask(src3, cmp_mask_3);
+#else
+    __m128i cmp_mask_0 = _mm_cmpgt_epi8(src0, dots);
+    __m128i cmp_mask_1 = _mm_cmpgt_epi8(src1, dots);
+    __m128i cmp_mask_2 = _mm_cmpgt_epi8(src2, dots);
+    __m128i cmp_mask_3 = _mm_cmpgt_epi8(src3, dots);
     uint32_t dot_mask_0 = (uint32_t)_mm_movemask_epi8(cmp_mask_0);
     uint32_t dot_mask_1 = (uint32_t)_mm_movemask_epi8(cmp_mask_1);
     uint32_t dot_mask_2 = (uint32_t)_mm_movemask_epi8(cmp_mask_2);

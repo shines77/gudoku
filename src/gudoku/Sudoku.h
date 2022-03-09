@@ -114,7 +114,7 @@ double calc_percent(size_t num_val, size_t num_total) {
         return 0.0;
 }
 
-struct Tables {
+struct sTables {
     const unsigned int div3[9] = { 0, 0, 0, 1, 1, 1, 2, 2, 2 };
     const unsigned int mod3[9] = { 0, 1, 2, 0, 1, 2, 0, 1, 2 };
 
@@ -468,12 +468,12 @@ struct Tables {
         { 8, 17, 26, 35, 44, 53, 60, 61, 62, 62, 69, 71, 72, 73, 74, 75, 76, 77, 78, 79 }   // 80
     };
 
-    Tables() noexcept {
+    sTables() noexcept {
         //
     }
 };
 
-static const Tables tables {};
+static const sTables s_tables {};
 
 struct Sudoku {
     static const size_t kAlignment = sizeof(size_t);
