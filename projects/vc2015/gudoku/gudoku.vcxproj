@@ -38,6 +38,7 @@
     <ClInclude Include="..\..\..\src\gudoku\StopWatch.h" />
     <ClInclude Include="..\..\..\src\gudoku\Sudoku.h" />
     <ClInclude Include="..\..\..\src\gudoku\Sudoku.hpp" />
+    <ClInclude Include="..\..\..\src\gudoku\TestCase.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{379F4E1A-674D-4464-9B00-F70708EE3B9D}</ProjectGuid>

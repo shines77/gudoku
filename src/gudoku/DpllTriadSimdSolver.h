@@ -31,6 +31,8 @@
 
 namespace gudoku {
 
+static const size_t kSearchMode = SearchMode::OneSolution;
+
 static const uint16_t kAll   = 0x01FF;
 static const uint32_t kAll32 = 0x01FF01FFU;
 static const uint64_t kAll64 = 0x01FF01FF01FF01FFULL;
@@ -502,8 +504,13 @@ public:
 
         this->reset_statistics(limit);
 
-
         return 0;
+    }
+
+    void display_result(Board & board, double elapsed_time,
+                        bool print_answer = true,
+                        bool print_all_answers = true) {
+        basic_solver::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
     }
 };
 

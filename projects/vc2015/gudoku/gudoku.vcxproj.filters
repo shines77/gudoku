@@ -60,5 +60,8 @@
     <ClInclude Include="..\..\..\src\gudoku\PackedBitSet.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\gudoku\TestCase.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
