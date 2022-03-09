@@ -23,14 +23,22 @@
     <ClCompile Include="..\..\..\src\gudoku\SudokuMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\gudoku\BasicSolver.h" />
+    <ClInclude Include="..\..\..\src\gudoku\BasicSolver.hpp" />
+    <ClInclude Include="..\..\..\src\gudoku\BitArray.h" />
+    <ClInclude Include="..\..\..\src\gudoku\BitSet.h" />
     <ClInclude Include="..\..\..\src\gudoku\BitUtils.h" />
     <ClInclude Include="..\..\..\src\gudoku\BitVec.h" />
     <ClInclude Include="..\..\..\src\gudoku\CPUWarmUp.h" />
+    <ClInclude Include="..\..\..\src\gudoku\DpllTriadSimdSolver.h" />
     <ClInclude Include="..\..\..\src\gudoku\gudoku.h" />
     <ClInclude Include="..\..\..\src\gudoku\msvc_x86intrin.h" />
+    <ClInclude Include="..\..\..\src\gudoku\PackedBitSet.h" />
     <ClInclude Include="..\..\..\src\gudoku\PowerOf2.h" />
     <ClInclude Include="..\..\..\src\gudoku\stddef.h" />
     <ClInclude Include="..\..\..\src\gudoku\StopWatch.h" />
+    <ClInclude Include="..\..\..\src\gudoku\Sudoku.h" />
+    <ClInclude Include="..\..\..\src\gudoku\Sudoku.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{379F4E1A-674D-4464-9B00-F70708EE3B9D}</ProjectGuid>
@@ -86,22 +94,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\vc2015\$(PlatformShortName)-$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\vc2015\$(PlatformShortName)-$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\vc2015\$(PlatformShortName)-$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\vc2015\$(PlatformShortName)-$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)obj\vc2015\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -19,7 +19,7 @@
 #include <initializer_list>
 #include <type_traits>
 
-#include "BitUtils.h"
+#include "gudoku/BitUtils.h"
 
 #if defined(_MSC_VER)
 

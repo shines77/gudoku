@@ -6,6 +6,7 @@
 #pragma once
 #endif
 
+#include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
 

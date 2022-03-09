@@ -6,7 +6,9 @@
 #pragma once
 #endif
 
+#ifndef USE_STD_INT
 #define USE_STD_INT     1
+#endif
 
 #if USE_STD_INT
 #include <stdint.h>

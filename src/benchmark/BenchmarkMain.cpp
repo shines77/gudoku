@@ -55,6 +55,11 @@
 #include "gudoku/gudoku.h"
 #include "gudoku/BitUtils.h"
 
+#include "gudoku/DpllTriadSimdSolver.h"
+
+#include "gudoku/BasicSolver.hpp"
+#include "gudoku/Sudoku.hpp"
+
 using namespace gudoku;
 
 int main(int argc, char * argv [])
@@ -62,5 +67,9 @@ int main(int argc, char * argv [])
     test::CPU::WarmUp cpuWarnUp(1000);
 
     printf("gudoku benchmark ver 1.0\n");
+
+    DpllTriadSimdSolver solver;
+    solver.solve();
+
     return 0;
 }
