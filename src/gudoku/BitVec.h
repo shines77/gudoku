@@ -416,7 +416,7 @@ static inline uint32_t mm_cvtsi128_si16(__m128i m128)
 #if defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || defined(__SSE4A__) || defined(__SSE4a__) \
  || defined(__SSE4_1__) || defined(__SSE4_2__)
 
-struct BitVec08x16 {
+struct alignas(16) BitVec08x16 {
     __m128i m128;
 
     BitVec08x16() noexcept {}
@@ -1397,7 +1397,7 @@ struct BitVec08x16 {
 #if defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || defined(__SSE4A__) || defined(__SSE4a__) \
  || defined(__SSE4_1__) || defined(__SSE4_2__)
 
-struct BitVec16x16_SSE {
+struct alignas(32) BitVec16x16_SSE {
     BitVec08x16 low;
     BitVec08x16 high;
 
@@ -2490,7 +2490,7 @@ struct BitVec16x16_SSE {
 
 #if defined(__AVX2__) || defined(__AVX512VL__) || defined(__AVX512F__)
 
-struct BitVec16x16_AVX {
+struct alignas(32) BitVec16x16_AVX {
     __m256i m256;
 
     BitVec16x16_AVX() noexcept {}

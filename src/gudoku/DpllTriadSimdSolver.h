@@ -731,7 +731,7 @@ private:
         // send these messages in order so that we return to the inbound peer last.
         int peer[3] = { tables.mod3[from_peer + 1], tables.mod3[from_peer + 2], from_peer };
         auto & box_peers = tables.box_peers[vertical][band_idx];
-        BitVec08x16 peer_triads[3]{ triads.getLow(), triads.getLow().rotateCols(), triads.getHigh() };
+        BitVec08x16 peer_triads[3] = { triads.getLow(), triads.getLow().rotateCols(), triads.getHigh() };
         return (boxRestrict<vertical>(state, box_peers[peer[0]],
                         positiveTriadsToBoxCandidates<vertical>(peer_triads[peer[0]])) &&
                 boxRestrict<vertical>(state, box_peers[peer[1]],
@@ -839,7 +839,7 @@ private:
         BitVec08x16 value_configurations = band.configurations & value_mask;
         // Assign the first configuration by eliminating the others
         this->num_guesses_++;
-        State next_state = state;
+        State next_state(state);
         BitVec08x16 assignment_elims = value_configurations.clearLowBit();
         next_state.bands[vertical][band_idx].eliminations |= assignment_elims;
         if (bandEliminate<vertical>(next_state, band_idx)) {
@@ -950,7 +950,7 @@ private:
     bool initSudoku(const char * puzzle, State & state, size_t & out_candidates) {
         state.init();
 
-        uint64_t nonDotMask64 = whichIsNotDots64(puzzle);
+        uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
         size_t candidates = BitUtils::popcnt64(nonDotMask64);
         while (nonDotMask64 != 0) {
             uint32_t pos = BitUtils::bsf64(nonDotMask64);
@@ -958,7 +958,7 @@ private:
             nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
         }       
 
-        uint32_t nonDotMask16 = whichIsNotDots16(puzzle + 64);
+        uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
         candidates += BitUtils::popcnt32(nonDotMask16);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
