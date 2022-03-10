@@ -27,7 +27,7 @@ namespace gudoku {
     static DpllTriadSimdSolver dpllTriadSimdSolver;
 }
 
-size_t gudoku_solver(const char * sudoku, char * soulution,
+size_t gudoku_solver(const char * sudoku, char * solution,
                      size_t limit, size_t * num_guesses)
 {
     size_t solutions = dpllTriadSimdSolver.solve(sudoku, solution, limit);
@@ -37,7 +37,7 @@ size_t gudoku_solver(const char * sudoku, char * soulution,
 
 #else // (GUDOKU_NO_MAIN == 0)
 
-size_t gudoku_solver(const char * sudoku, char * soulution,
+size_t gudoku_solver(const char * sudoku, char * solution,
                      size_t limit, size_t * num_guesses)
 {
     return 0;
