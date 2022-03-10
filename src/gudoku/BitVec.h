@@ -1437,18 +1437,8 @@ struct BitVec16x16_SSE {
     BitVec16x16_SSE(uint64_t q00, uint64_t q01, uint64_t q02, uint64_t q03) noexcept :
             low(q00, q01), high(q02, q03) {}
 
-    BitVec16x16_SSE & setLow(const BitVec08x16 & _low) {
-        this->low = _low;
-        return *this;
-    }
-
-    BitVec16x16_SSE & setHigh(const BitVec08x16 & _high) {
-        this->high = _high;
-        return *this;
-    }
-
     BitVec16x16_SSE & mergeFrom(const BitVec08x16 & _low, const BitVec08x16 & _high) {
-        this->low = _low;
+        this->low  = _low;
         this->high = _high;
         return *this;
     }
@@ -1466,16 +1456,26 @@ struct BitVec16x16_SSE {
     }
 
     inline void splitTo(BitVec08x16 & _low, BitVec08x16 & _high) const {
-        _low = this->low;
+        _low  = this->low;
         _high = this->high;
     }
 
-    inline const BitVec08x16 getLow() const {
+    inline BitVec08x16 getLow() const {
         return this->low;
     }
 
-    inline const BitVec08x16 getHigh() const {
+    inline BitVec08x16 getHigh() const {
         return this->high;
+    }
+
+    BitVec16x16_SSE & setLow(const BitVec08x16 & _low) {
+        this->low = _low;
+        return *this;
+    }
+
+    BitVec16x16_SSE & setHigh(const BitVec08x16 & _high) {
+        this->high = _high;
+        return *this;
     }
 
     inline BitVec16x16_SSE & operator = (const BitVec16x16_SSE & right) {
@@ -2544,18 +2544,18 @@ struct BitVec16x16_AVX {
 
     inline void castTo(BitVec16x16_SSE & xmm) const {
 #if 0
-        xmm.low = _mm256_extracti128_si256(this->m256, 0);
+        xmm.low  = _mm256_extracti128_si256(this->m256, 0);
         xmm.high = _mm256_extracti128_si256(this->m256, 1);
 #else
         // __m128i _mm256_extracti128_si256(__m256i a, const int imm8);
         xmm.high = _mm256_extracti128_si256(this->m256, 1);
-        xmm.low = _mm256_castsi256_si128(this->m256);
+        xmm.low  = _mm256_castsi256_si128(this->m256);
 #endif
     }
 
     inline void castTo(BitVec08x16 & low, BitVec08x16 & high) const {
         high = _mm256_extracti128_si256(this->m256, 1);
-        low = _mm256_castsi256_si128(this->m256);
+        low  = _mm256_castsi256_si128(this->m256);
     }
 
     inline void mergeTo(__m256i & m256) const {
@@ -2563,20 +2563,30 @@ struct BitVec16x16_AVX {
     }
 
     inline void splitTo(BitVec08x16 & low, BitVec08x16 & high) const {
-        low = _mm256_extracti128_si256(this->m256, 0);
+        low  = _mm256_extracti128_si256(this->m256, 0);
         high = _mm256_extracti128_si256(this->m256, 1);
     }
 
-    inline BitVec08x16 getLow() const {
-#if 1
+    inline BitVec08x16 _getLow() const {
         return _mm256_castsi256_si128(this->m256);
-#else
+    }
+
+    inline BitVec08x16 getLow() const {
         return _mm256_extracti128_si256(this->m256, 0);
-#endif
     }
 
     inline BitVec08x16 getHigh() const {
         return _mm256_extracti128_si256(this->m256, 1);
+    }
+
+    BitVec16x16_AVX & setLow(const BitVec08x16 & low) {
+        this->m256 = _mm256_inserti128_si256(this->m256, low.m128, 0);
+        return *this;
+    }
+
+    BitVec16x16_AVX & setHigh(const BitVec08x16 & high) {
+        this->m256 = _mm256_inserti128_si256(this->m256, high.m128, 1);
+        return *this;
     }
 
     inline BitVec16x16_AVX & operator = (const BitVec16x16_AVX & right) {
