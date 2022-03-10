@@ -444,7 +444,7 @@ struct Tables {
 
 const Tables tables {};
 
-class DpllTriadSimdSolver : public BasicSolver {
+class alignas(32) DpllTriadSimdSolver : public BasicSolver {
 public:
     typedef BasicSolver                 basic_solver;
     typedef DpllTriadSimdSolver         this_type;
