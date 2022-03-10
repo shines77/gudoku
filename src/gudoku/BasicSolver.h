@@ -18,7 +18,7 @@
 
 namespace gudoku {
 
-class BasicSolver {
+class alignas(32) BasicSolver {
 public:
     typedef BasicSolver this_type;
 
@@ -35,9 +35,10 @@ protected:
     size_t num_guesses_;
     size_t num_solutions_;
     size_t limit_solutions_;
+    size_t reserve1_;
 
 public:
-    BasicSolver() : num_guesses_(0), num_solutions_(0), limit_solutions_(0) {
+    BasicSolver() : num_guesses_(0), num_solutions_(0), limit_solutions_(0), reserve1_(0) {
     }
     ~BasicSolver() {}
 
