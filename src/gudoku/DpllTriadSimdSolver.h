@@ -404,7 +404,9 @@ struct Tables {
     BoxIndexing box_indexing[81];
 
     Tables() noexcept {
-        for (int i : { 0, 1, 2, 4, 5, 6, 8, 9, 10 }) {
+        // 0, 1, 2, | 4, 5, 6, | 8, 9, 10
+        for (int i = 0; i < 12; i++) {
+            if ((i % 4) == 3) continue;
             // only need for cells, not triads
             for (uint32_t value = 0; value < 9; value++) {
                 BitVec16x16 & mask = cell_assignment_eliminations[value][i];
@@ -425,9 +427,9 @@ struct Tables {
             }
         }
 
-        for (int x = 0; x < Sudoku::kBoxCountX; x++) {
-            for (int y = 0; y < Sudoku::kBoxCountY; y++) {
-                int box_idx = x * Sudoku::kBoxCountY + y;
+        for (int x = 0; x < (int)Sudoku::kBoxCountX; x++) {
+            for (int y = 0; y < (int)Sudoku::kBoxCountY; y++) {
+                int box_idx = x * (int)Sudoku::kBoxCountY + y;
                 triads_shift0_to_config_elims16[box_idx] =
                         BitVec16x16{triads_shift0_to_config_elims[x], triads_shift0_to_config_elims[y]};
                 triads_shift1_to_config_elims16[box_idx] =
