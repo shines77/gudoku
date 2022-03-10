@@ -3492,12 +3492,6 @@ struct alignas(32) BitVec16x16_AVX {
     }
 };
 
-typedef BitVec16x16_AVX     BitVec16x16;
-
-#else // !__AVX2__
-
-typedef BitVec16x16_SSE     BitVec16x16;
-
 #endif // __AVX2__
 
 ////////////////////////////////////////////////////////////
@@ -3771,6 +3765,12 @@ uint64_t whichIsNotDots64(const char * p) {
             ((uint64_t)dot_mask_2 << 32U) | ((uint64_t)dot_mask_3 << 48U));
 #endif // __AVX512F__
 }
+
+#if defined(__AVX2__) || defined(__AVX512VL__) || defined(__AVX512F__)
+typedef BitVec16x16_AVX     BitVec16x16;
+#else
+typedef BitVec16x16_SSE     BitVec16x16;
+#endif // __AVX2__
 
 } // namespace gudoku
 
