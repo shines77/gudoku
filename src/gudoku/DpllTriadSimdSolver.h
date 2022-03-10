@@ -352,11 +352,11 @@ struct Tables {
     const uint32_t box_base_tbl[9] = {
         0, 3, 9, 27, 30, 33, 54, 57, 60
     };
-    const uint8_t digit_to_candidate[128] = {
+    const uint16_t digit_to_candidate[128] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 00
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 10
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 20
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0,     // 30
+        0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 0, 0, 0, 0, 0, 0,     // 30
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 40
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 50
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 60
@@ -874,7 +874,7 @@ private:
         uint32_t nonDotMask16 = whichIsNotDots16(puzzle + 64);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            initClue(puzzle, state, pos);
+            initClue(puzzle, state, pos + 64);
             nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
         }
 
@@ -909,7 +909,7 @@ private:
         candidates += BitUtils::popcnt32(nonDotMask16);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            initClue(puzzle, state, pos);
+            initClue(puzzle, state, pos + 64);
             nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
         }
 
@@ -962,20 +962,22 @@ public:
     JSTD_NO_INLINE
     size_t solve(const char * puzzle, char * solution, size_t limit) {
         State & state = this->state_;
+        this->resetStatistics(limit);
 #if 1
         bool success = this->initSudoku(puzzle, state);
-        if (!success)
-            return -1;
+        if (success) {
+            countSolutionsConsistentWithPartialAssignment(state);
+            extractSolution(this->result_state_, solution);
+        }
 #else
         size_t candidates;
         bool success = this->initSudoku(puzzle, state, candidates);
-        if (!success || candidates < (intptr_t)Sudoku::kMinInitCandidates)
-            return -1;
+        if (success && (candidates >= Sudoku::kMinInitCandidates)) {
+            countSolutionsConsistentWithPartialAssignment(state);
+            extractSolution(this->result_state_, solution);
+        }
 #endif
-
-        this->resetStatistics(limit);
-
-        return 0;
+        return this->num_solutions_;
     }
 
     void display_result(Board & board, double elapsed_time,
