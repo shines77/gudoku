@@ -60,11 +60,11 @@ struct SearchMode {
 
 #pragma pack(push, 1)
 
-struct alignas(32) Board {
+struct Board {
     char cells[81];
 
     void clear() {
-#if 0
+#if 1
         //std::fill_n(this->cells, sizeof(this->cells), 0);
         std::memset(&this->cells[0], 0, sizeof(this->cells));
 #else

@@ -460,7 +460,7 @@ struct alignas(16) BitVec08x16 {
     }
 
     inline void saveAligned(void * mem_addr) const {
-        _mm_storeu_si128((__m128i *)mem_addr, this->m128);
+        _mm_store_si128((__m128i *)mem_addr, this->m128);
     }
 
     inline void saveUnaligned(void * mem_addr) const {
@@ -2608,7 +2608,7 @@ struct alignas(32) BitVec16x16_AVX {
     }
 
     inline void saveAligned(void * mem_addr) const {
-        _mm256_storeu_si256((__m256i *)mem_addr, this->m256);
+        _mm256_store_si256((__m256i *)mem_addr, this->m256);
     }
 
     inline void saveUnaligned(void * mem_addr) const {
