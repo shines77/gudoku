@@ -44,6 +44,45 @@
 
 #endif //_MSC_VER
 
+/*
+ * We'll support vectors targeting sse2, sse4_1, avx2, and avx512bitalg instruction sets.
+ * While avx2 or avx512 will be ideal, sse4_1 should deliver solid performance. OTOH, sse2
+ * performance is seriously handicapped because of our heavy reliance on fast ssse3 shuffles
+ * for which there is no great sse2 alternative.
+ *
+ * sse2 - pentium4 2000
+ *   has most of the instructions we'll use, with exceptions noted below
+ *
+ * ssse3 2006 - core2 2006
+ *   _mm_shuffle_epi8      // sse2 alt: kind of a mess. see below.
+ *
+ * sse4_1 - penryn 2007
+ *   _mm_testz_si128       // sse2 alt: movemask(cmpeq(setzero())) in sse2
+ *   _mm_blend_epi16       // sse2 alt: &| with masks
+ *   _mm_minpos_epu8
+ *
+ * sse4_2 - nehalem 2007
+ *   _mm_cmpgt_epi64
+ *
+ * avx2 - haswell 2013
+ *   _mm256 versions of most everything
+ *
+ * avx512vl - skylake 2017
+ *  _mm(256)_ternarylogic_epi32
+ *
+ * avx512vpopcntdq, avx512bitalg - ice lake 2019
+ *   _mm_popcnt_epi64
+ *   _mm256_popcnt_epi16
+ *
+ * April 2021 Steam monthly hardware survey:
+ *   SSE2        100.00%
+ *   SSSE3        99.17%
+ *   SSE4.1       98.80%
+ *   SSE4.2       98.36%
+ *   AVX          94.77%
+ *   AVX2         82.28%
+ */
+
 // For SSE2, SSE3, SSSE3, SSE 4.1, AVX, AVX2
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -54,63 +93,134 @@
 #include "gudoku/msvc_x86intrin.h"
 #include <avxintrin.h>
 
+/////////////////////////////////////////////
+
+#ifndef _mm256_set_m128
+#define _mm256_set_m128(hi, lo) \
+        _mm256_insertf128_ps(_mm256_castps128_ps256(lo), (hi), 0x1)
+#endif
+
+#ifndef _mm256_set_m128d
+#define _mm256_set_m128d(hi, lo) \
+        _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), (hi), 0x1)
+#endif
+
+#ifndef _mm256_set_m128i
+#define _mm256_set_m128i(hi, lo) \
+        _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
+#endif
+
+/////////////////////////////////////////////
+
+#ifndef _mm256_setr_m128
+#define _mm256_setr_m128(lo, hi)    _mm256_set_m128((hi), (lo))
+#endif
+
+#ifndef _mm256_setr_m128d
+#define _mm256_setr_m128d(lo, hi)   _mm256_set_m128d((hi), (lo))
+#endif
+
+#ifndef _mm256_setr_m128i
+#define _mm256_setr_m128i(lo, hi)   _mm256_set_m128i((hi), (lo))
+#endif
+
+/////////////////////////////////////////////
+
+#ifndef _mm256_test_all_zeros
+#define _mm256_test_all_zeros(mask, val) \
+        _mm256_testz_si256((mask), (val))
+#endif
+
+#ifndef _mm256_test_all_ones
+#define _mm256_test_all_ones(val) \
+        _mm256_testc_si256((val), _mm256_cmpeq_epi32((val), (val)))
+#endif
+
+#ifndef _mm256_test_mix_ones_zeros
+#define _mm256_test_mix_ones_zeros(mask, val) \
+        _mm256_testnzc_si256((mask), (val))
+#endif
+#endif // _MSC_VER
+
+/////////////////////////////////////////////
+
+#ifndef _mm_bslli_si128
+#define _mm_bslli_si128 _mm_slli_si128
+#endif
+
+#ifndef _mm_bsrli_si128
+#define _mm_bsrli_si128 _mm_srli_si128
+#endif
+
+/////////////////////////////////////////////
+
+#ifndef _mm_cvtss_i32
 #define _mm_cvtss_i32 _mm_cvtss_si32
+#endif
+
+#ifndef _mm_cvtsd_i32
 #define _mm_cvtsd_i32 _mm_cvtsd_si32
+#endif
+
+#ifndef _mm_cvti32_sd
 #define _mm_cvti32_sd _mm_cvtsi32_sd
+#endif
+
+#ifndef _mm_cvti32_ss
 #define _mm_cvti32_ss _mm_cvtsi32_ss
-#ifdef __x86_64__
+#endif
+
+/////////////////////////////////////////////
+
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+
+#ifndef _mm_cvtss_i64
 #define _mm_cvtss_i64 _mm_cvtss_si64
+#endif
+
+#ifndef _mm_cvtsd_i64
 #define _mm_cvtsd_i64 _mm_cvtsd_si64
+#endif
+
+#ifndef _mm_cvti64_sd
 #define _mm_cvti64_sd _mm_cvtsi64_sd
+#endif
+
+#ifndef _mm_cvti64_ss
 #define _mm_cvti64_ss _mm_cvtsi64_ss
 #endif
 
+#endif // __amd64__
+
+/////////////////////////////////////////////
+
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+// x64 mode have no _mm_setr_epi64()
+#else
+#ifndef _mm_setr_epi64x
 #define _mm_setr_epi64x(high, low) \
         _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
+#endif
+#endif // __amd64__
 
-#if !defined(_mm256_set_m128i)
-
-#define _mm256_set_m128(hi, lo) \
-        _mm256_insertf128_ps(_mm256_castps128_ps256(lo), (hi), 0x1)
-
-#define _mm256_set_m128d(hi, lo) \
-        _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), (hi), 0x1)
-
-#define _mm256_set_m128i(hi, lo) \
-        _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
-
-#endif // !_mm256_set_m128i
-
-#if !defined(_mm256_setr_m128i)
-
-#define _mm256_setr_m128(lo, hi)    _mm256_set_m128((hi), (lo))
-#define _mm256_setr_m128d(lo, hi)   _mm256_set_m128d((hi), (lo))
-#define _mm256_setr_m128i(lo, hi)   _mm256_set_m128i((hi), (lo))
-
-#endif // !_mm256_setr_m128i
-
-#define _mm256_test_all_zeros(mask, val) \
-        _mm256_testz_si256((mask), (val))
-
-#define _mm256_test_all_ones(val) \
-        _mm256_testc_si256((val), _mm256_cmpeq_epi32((val), (val)))
-
-#define _mm256_test_mix_ones_zeros(mask, val) \
-        _mm256_testnzc_si256((mask), (val))
-#endif // _MSC_VER
+/////////////////////////////////////////////
 
 //
 // Missing in MSVC (before 2017) & gcc (before 11.0)
 //
-#if !defined(_mm256_cvtsi256_si32)
+#ifndef _mm256_cvtsi256_si32
 #define _mm256_cvtsi256_si32(val) \
         _mm_cvtsi128_si32(_mm256_castsi256_si128(val))
 #endif // _mm256_cvtsi256_si32
 
-#if !defined(_mm256_insert_epi16)
+#ifndef _mm256_insert_epi16
 #define _mm256_insert_epi16(target, value, index) \
         AVX2::template mm256_insert_epi16<index>(target, value)
 #endif // _mm256_insert_epi16
+
+/////////////////////////////////////////////
 
 //
 // Intel Intrinsics Guide (SIMD)
@@ -169,7 +279,15 @@ static const int OP_X_andnot_Y_or_Z = 0b10111010;
 static const int OP_X_or_Y_or_Z     = 0b11111110;
 static const int OP_X_xor_Y_or_Z    = 0b10111110;
 
+struct Consts {
+    __m128i popcount_mask4  = _mm_set1_epi16(0x000F);
+    __m128i popcount_lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+    __m128i rotate_rows1    = _mm_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9);
+};
 
+const Consts consts{};
+
+static inline
 bool check_alignment(void * address, size_t alignment)
 {
     uintptr_t ptr = (uintptr_t)address;
@@ -595,8 +713,8 @@ struct BitVec08x16 {
     }
 
     inline bool isEqual(const BitVec08x16 & other) const {
-#if defined(__AVX512VL__) && defined(__AVX512BW__)
-        return (_mm_cmp_epi16_mask(this->m128, other.m128, _MM_CMPINT_EQ) == 0x0F);
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+        return (_mm_cmpneq_epi16_mask(this->m128, other.m128) == 0);
 #elif 1
         // isAllZeros() faster than isAllOnes(), because it's instructions less than isAllOnes().
         BitVec08x16 is_neq_mask = _mm_xor_si128(this->m128, other.m128);
@@ -608,7 +726,9 @@ struct BitVec08x16 {
     }
 
     inline bool isNotEqual(const BitVec08x16 & other) const {
-#if 1
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+        return (_mm_cmpneq_epi16_mask(this->m128, other.m128) != 0);
+#elif 1
         // isNotAllZeros() faster than isNotAllOnes(), because it's instructions less than isNotAllOnes().
         BitVec08x16 is_neq_mask = _mm_xor_si128(this->m128, other.m128);
         return is_neq_mask.isNotAllZeros();
@@ -636,6 +756,15 @@ struct BitVec08x16 {
 #endif
     }
 
+    inline bool hasAnyLessThan(const BitVec08x16 & other) const {
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+        return (_mm_cmp_epi16_mask(this->m128, other.m128, _MM_CMPINT_LT) != 0);
+#else
+        BitVec08x16 which_less_than = _mm_cmpgt_epi16(other.m128, this->m128);
+        return (_mm_movemask_epi8(which_less_than.m128) != 0);
+#endif
+    }
+
     inline bool hasIntersects(const BitVec08x16 & other) const {
 #if defined(__SSE4_1__)
         return (_mm_testz_si128(this->m128, other.m128) == 0);
@@ -652,6 +781,25 @@ struct BitVec08x16 {
         BitVec08x16 subset = _mm_andnot_si128(other.m128, this->m128);
         return subset.isAllZeros();
 #endif
+    }
+
+    inline BitVec08x16 getLowBit() const {
+#if defined(__SSSE3__)
+        return _mm_and_si128(this->m128, _mm_sign_epi16(this->m128, _mm_set1_epi16(-1)));
+#else
+        return _mm_and_si128(this->m128, _mm_add_epi16(_mm_xor_si128(this->m128, _mm_set1_epi16(-1)), _mm_set1_epi16(1)));
+#endif
+    }
+
+    inline BitVec08x16 clearLowBit() const {
+#if defined(__SSE4_2__)
+        __m128i cmp = _mm_cmpgt_epi64(this->m128, _mm_setzero_si128());
+#else
+        __m128i cmp = _mm_cmpgt_epi32(this->m128, _mm_setzero_si128());
+        cmp = _mm_or_si128(cmp, _mm_shuffle_epi32(cmp, 0b10110001));
+#endif
+        __m128i one = _mm_andnot_si128(_mm_slli_si128(cmp, 1), _mm_srli_epi64(cmp, 63));
+        return _mm_and_si128(this->m128, _mm_sub_epi64(this->m128, one));
     }
 
     inline BitVec08x16 whichIsEqual(const BitVec08x16 & other) const {
@@ -702,6 +850,12 @@ struct BitVec08x16 {
         BitVec08x16 zeros;
         zeros.setAllZeros();
         return this->whichIsLessThan(zeros);
+    }
+
+    inline BitVec08x16 whichIsLessThanOne() const {
+        BitVec08x16 ones;
+        ones.setAllOnes();
+        return this->whichIsLessThan(ones);
     }
 
     inline BitVec08x16 whichIsEqual16(uint16_t num) const {
@@ -828,6 +982,92 @@ struct BitVec08x16 {
                 break;
         }
         #undef CASE
+    }
+
+    template <uint16_t min_val>
+    inline uint32_t minPosGreaterThanOrEqual() const {
+#if defined(__SSE4_1__)
+        return _mm_cvtsi128_si32(_mm_minpos_epu16(_mm_sub_epi16(this->m128, _mm_set1_epi16(min_val))));
+#else
+        uint32_t min = 0xFFFFu;
+        uint32_t pos = 0;
+        uint64_t lo = _mm_cvtsi128_si64(this->m128);
+        for (int i = 0; i < 4; i++) {
+            uint32_t val = ((int32_t)(lo & 0xFFFFu) - min_val);
+            if (val < min) {
+                min = val;
+                pos = i;
+            }
+            lo >>= 16u;
+        }
+        uint64_t hi = _mm_cvtsi128_si64(_mm_unpackhi_epi64(this->m128, this->m128));
+        for (int i = 4; i < 8; i++) {
+            uint32_t val = ((int32_t)(hi & 0xFFFFu) - min_val);
+            if (val < min) {
+                min = val;
+                pos = i;
+            }
+            hi >>= 16u;
+        }
+        return (pos << 16u) | min;
+#endif // __SSE4_1__
+    }
+
+    inline BitVec08x16 shuffle(const BitVec08x16 & control) const {
+#if defined(__SSSE3__)
+        return _mm_shuffle_epi8(this->m128, control.m128);
+#else
+        // we'll rely on the assumption that all requested shuffles are for epi16s so each
+        // pair of requested bytes are always adjacent like 0x0302.
+        __m128i ctrl = control.m128 & _mm_set1_epi16(0x0f);
+
+        // replicate low 16 bits of each epi32 to the high 16
+        BitVec08x16 low_16s = this->m128 & _mm_set1_epi32(0x0000FFFF);
+        low_16s |= _mm_slli_si128(low_16s.m128, 2);
+        // and vice versa
+        BitVec08x16 high_16s = this->m128 & _mm_set1_epi32(0xFFFF0000);
+        high_16s |= _mm_srli_si128(high_16s.m128, 2);
+
+        BitVec08x16 z;
+        z.setAllZeros();
+        z |= _mm_shuffle_epi32(low_16s.m128,  0b00000000) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x00));
+        z |= _mm_shuffle_epi32(high_16s.m128, 0b00000000) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x02));
+        z |= _mm_shuffle_epi32(low_16s.m128,  0b01010101) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x04));
+        z |= _mm_shuffle_epi32(high_16s.m128, 0b01010101) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x06));
+        z |= _mm_shuffle_epi32(low_16s.m128,  0b10101010) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x08));
+        z |= _mm_shuffle_epi32(high_16s.m128, 0b10101010) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x0A));
+        z |= _mm_shuffle_epi32(low_16s.m128,  0b11111111) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x0C));
+        z |= _mm_shuffle_epi32(high_16s.m128, 0b11111111) & _mm_cmpeq_epi16(ctrl, _mm_set1_epi16(0x0E));
+        return z;
+#endif // __SSSE3__
+    }
+
+    inline BitVec08x16 rotateRows() const {
+#ifdef __SSSE3__
+        return shuffle(consts.rotate_rows1);
+#else
+        __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0xffff, 0x0, 0xffff, 0xffff, 0xffff, 0x0);
+        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0x0, 0xffff, 0x0, 0x0, 0x0, 0xffff);
+        return _mm_or_si128(
+                _mm_and_si128(_mm_bsrli_si128(this->m128, 2), mask1),
+                _mm_and_si128(_mm_bslli_si128(this->m128, 6), mask2));
+#endif
+    }
+
+    inline BitVec08x16 rotateRows2() const {
+#ifdef __SSSE3__
+        return _mm_shuffle_epi32(this->m128, 0b10110001);
+#else
+        __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0);
+        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff);
+        return _mm_or_si128(
+                _mm_and_si128(_mm_bsrli_si128(this->m128, 4), mask1),
+                _mm_and_si128(_mm_bslli_si128(this->m128, 4), mask2));
+#endif
+    }
+
+    inline BitVec08x16 rotateCols() const {
+        return _mm_shuffle_epi32(this->m128, 0b01001110);
     }
 
     inline int popcount() const {
@@ -1477,6 +1717,10 @@ struct BitVec16x16 {
         return (this->low.hasAnyOne() && this->high.hasAnyOne());
     }
 
+    inline bool hasAnyLessThan(const BitVec16x16 & other) const {
+        return (this->low.hasAnyLessThan(other.low) && this->high.hasAnyLessThan(other.high));
+    }
+
     inline bool hasIntersects(const BitVec16x16 & other) const {
         return (this->low.hasIntersects(other.low) && this->high.hasIntersects(other.high));
     }
@@ -1519,6 +1763,10 @@ struct BitVec16x16 {
 
     inline BitVec16x16 whichIsLessThanZero() const {
         return BitVec16x16(this->low.whichIsLessThanZero(), this->high.whichIsLessThanZero());
+    }
+
+    inline BitVec16x16 whichIsLessThanOne() const {
+        return BitVec16x16(this->low.whichIsLessThanOne(), this->high.whichIsLessThanOne());
     }
 
     inline BitVec16x16 whichIsEqual16(uint16_t num) const {
@@ -1752,6 +2000,32 @@ struct BitVec16x16 {
         }
         #undef CASE_LOW
         #undef CASE_HIGH
+    }
+
+    inline BitVec16x16 shuffle(const BitVec16x16 & control) const {
+        return BitVec16x16{this->low.shuffle(control.low), this->high.shuffle(control.high)};
+    }
+
+    inline BitVec16x16 rotateRows() const {
+        return BitVec16x16{this->low.rotateRows(), this->high.rotateRows()};
+    }
+
+    inline BitVec16x16 rotateRows2() const {
+        return BitVec16x16{this->low.rotateRows2(), this->high.rotateRows2()};
+    }
+
+    inline BitVec16x16 rotateCols() const {
+#if defined(__SSSE3__)
+        return BitVec16x16{_mm_alignr_epi8(this->high.m128, this->low.m128, 8),
+                           _mm_alignr_epi8(this->low.m128, this->high.m128, 8)};
+#else
+        return BitVec16x16{_mm_or_si128(_mm_srli_si128(this->low.m128, 8), _mm_slli_si128(this->high.m128, 8)),
+                           _mm_or_si128(_mm_srli_si128(this->high.m128, 8), _mm_slli_si128(this->low.m128, 8))};
+#endif
+    }
+
+    inline BitVec16x16 rotateCols2() const {
+        return BitVec16x16(this->high, this->low);
     }
 
     inline int popcount() const {
@@ -2497,7 +2771,9 @@ struct BitVec16x16_AVX {
     }
 
     inline bool isEqual(const BitVec16x16_AVX & other) const {
-#if 1
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+        return (_mm256_cmpneq_epi16_mask(this->m256, other.m256) == 0);
+#elif 1
         // isAllZeros() faster than isAllOnes(), because it's instructions less than isAllOnes().
         BitVec16x16_AVX is_neq_mask = _mm256_xor_si256(this->m256, other.m256);
         return is_neq_mask.isAllZeros();
@@ -2508,7 +2784,9 @@ struct BitVec16x16_AVX {
     }
 
     inline bool isNotEqual(const BitVec16x16_AVX & other) const {
-#if 1
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+        return (_mm256_cmpneq_epi16_mask(this->m256, other.m256) != 0);
+#elif 1
         // isNotAllZeros() faster than isNotAllOnes(), because it's instructions less than isNotAllOnes().
         BitVec16x16_AVX is_neq_mask = _mm256_xor_si256(this->m256, other.m256);
         return is_neq_mask.isNotAllZeros();
@@ -2522,7 +2800,7 @@ struct BitVec16x16_AVX {
 #if 1
         return this->isNotAllOnes();
 #else
-#if defined(__AVX512VL__) && defined(__AVX512BW__)
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
         return (_mm256_cmp_epi16_mask(this->m256, _mm256_setzero_si256(), _MM_CMPINT_EQ) != 0);
 #else
         BitVec16x16_AVX which_is_zero = this->whichIsZeros();
@@ -2535,12 +2813,21 @@ struct BitVec16x16_AVX {
 #if 1
         return this->isNotAllZeros();
 #else
-#if defined(__AVX512VL__) && defined(__AVX512BW__)
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
         return (_mm256_cmp_epi16_mask(this->m256, _mm256_setzero_si256(), _MM_CMPINT_GT) != 0);
 #else
         BitVec16x16_AVX which_is_non_zero = this->whichIsNonZero();
         return (_mm256_movemask_epi8(which_is_non_zero.m256) != 0);
 #endif
+#endif
+    }
+
+    inline bool hasAnyLessThan(const BitVec16x16_AVX & other) const {
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
+        return (_mm256_cmp_epi16_mask(this->m256, other.m256, _MM_CMPINT_LT) != 0);
+#else
+        BitVec16x16_AVX which_less_than = _mm256_cmpgt_epi16(other.m256, this->m256);
+        return (_mm256_movemask_epi8(which_less_than.m256) != 0);
 #endif
     }
 
@@ -2569,14 +2856,22 @@ struct BitVec16x16_AVX {
     }
 
     inline BitVec16x16_AVX whichIsLessThan(const BitVec16x16_AVX & other) const {
+#if 1
+        // Though AVX2 have no _mm256_cmplt_epi16(),
+        // but we can use _mm256_cmpgt_epi16(other, this->m256),
+        // which is equivalent.
+        __m256i less_than_mask = _mm256_cmpgt_epi16(other.m256, this->m256);
+        return less_than_mask;
+#else
         // Bad news: AVX2 have no _mm256_cmplt_epi16() ???
         __m256i is_eq_mask = _mm256_cmpeq_epi16(this->m256, other.m256);
         __m256i is_gt_mask = _mm256_cmpgt_epi16(this->m256, other.m256);
         __m256i is_ge_mask = _mm256_and_si256(is_eq_mask, is_gt_mask);
         BitVec16x16_AVX ones;
         ones.setAllOnes();
-        __m256i is_lt_mask = _mm256_andnot_si256(is_ge_mask, ones.m256);
-        return is_lt_mask;
+        __m256i less_than_mask = _mm256_andnot_si256(is_ge_mask, ones.m256);
+        return less_than_mask;
+#endif
     }
 
     inline BitVec16x16_AVX whichIsZeros() const {
@@ -2607,6 +2902,12 @@ struct BitVec16x16_AVX {
         BitVec16x16_AVX zeros;
         zeros.setAllZeros();
         return this->whichIsLessThan(zeros);
+    }
+
+    inline BitVec16x16_AVX whichIsLessThanOne() const {
+        BitVec16x16_AVX ones;
+        ones.setAllOnes();
+        return this->whichIsLessThan(ones);
     }
 
     inline BitVec16x16_AVX whichIsEqual16(uint16_t num) const {
@@ -2799,6 +3100,33 @@ struct BitVec16x16_AVX {
         }
         #undef CASE
 #endif // !_mm256_insert_epi16
+    }
+
+    inline BitVec16x16_AVX shuffle(const BitVec16x16_AVX & control) const {
+        return _mm256_shuffle_epi8(this->m256, control.m256);
+    }
+
+    inline BitVec16x16_AVX rotateRows() const {
+#if defined(__AVX512VL__) && defined(__AVX512VBMI2__)
+        return _mm256_shldi_epi64(this->m256, this->m256, 16);
+#else
+        __m256i shuffle_control =
+                _mm256_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9,
+                                 2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9);
+        return _mm256_shuffle_epi8(this->m256, shuffle_control);
+#endif
+    }
+
+    inline BitVec16x16_AVX rotateRows2() const {
+        return _mm256_shuffle_epi32(this->m256, 0b10110001);
+    }
+
+    inline BitVec16x16_AVX rotateCols() const {
+        return _mm256_permute4x64_epi64(this->m256, 0b00111001);
+    }
+
+    inline BitVec16x16_AVX rotateCols2() const {
+        return _mm256_permute4x64_epi64(this->m256, 0b01001110);
     }
 
     inline int popcount() const {

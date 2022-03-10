@@ -37,6 +37,9 @@ static const uint16_t kAll   = 0x01FF;
 static const uint32_t kAll32 = 0x01FF01FFU;
 static const uint64_t kAll64 = 0x01FF01FF01FF01FFULL;
 
+static const size_t kHorizontal = 0;
+static const size_t kVertical = 1;
+
 //  The state of each box is stored in a vector of 16 uint16_t,     +---+---+---+---+
 //  arranged as a 4x4 matrix of 9-bit candidate sets (the high      | c | c | c | H |
 //  7 bits of each value are always zero). The top-left 3x3 sub-    +---+---+---+---+
@@ -443,15 +446,8 @@ const Tables tables {};
 
 class DpllTriadSimdSolver : public BasicSolver {
 public:
-    typedef BasicSolver                         basic_solver;
-    typedef DpllTriadSimdSolver                 this_type;
-
-    typedef typename Sudoku::NeighborCells      NeighborCells;
-    typedef typename Sudoku::CellInfo           CellInfo;
-    typedef typename Sudoku::BoxesInfo          BoxesInfo;
-
-    typedef typename Sudoku::BitMask            BitMask;
-    typedef typename Sudoku::BitMaskTable       BitMaskTable;
+    typedef BasicSolver                 basic_solver;
+    typedef DpllTriadSimdSolver         this_type;
 
     static const size_t kAlignment = Sudoku::kAlignment;
     static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
@@ -485,8 +481,6 @@ public:
     static const size_t kAllBoxCellBits = Sudoku::kAllBoxCellBits;
     static const size_t kAllNumberBits = Sudoku::kAllNumberBits;
 
-    static const bool kAllDimIsSame = Sudoku::kAllDimIsSame;
-
     // all pencil marks set - 27 bits per band
     static const uint32_t kBitSet27          = 0x07FFFFFFUL;
     static const uint64_t kBitSet27_Single64 = 0x0000000007FFFFFFULL;
@@ -502,6 +496,7 @@ public:
 
 private:
     State state_;
+    State result_state_;
 
 public:
     DpllTriadSimdSolver() : basic_solver() {}
@@ -525,8 +520,8 @@ private:
         do {
             // Apply eliminations and check that no cell clause now violates its minimum
             box.cells = box.cells.and_not(eliminating);
-            BitVec16x16 counts = box.cells.popcounts9();
-            const BitVec16x16 box_minimums{1, 1, 1, 6, 1, 1, 1, 6, 1, 1, 1, 6, 6, 6, 6, 0};
+            BitVec16x16 counts = box.cells.popcount16<16, Numbers>();
+            const BitVec16x16 box_minimums(1, 1, 1, 6, 1, 1, 1, 6, 1, 1, 1, 6, 6, 6, 6, 0);
             if (counts.hasAnyLessThan(box_minimums)) return false;
 
             // Gather literals asserted by triggered cell clauses
@@ -663,7 +658,7 @@ private:
         BitVec16x16 triads = configurationsToPositiveTriads(band.configurations);
         // we might check here that every cell (corresponding to a minirow or minicol) still has
         // at least three triad candidates, but the check is a net loss.
-        BitVec16x16 counts = triads.popcounts9();
+        BitVec16x16 counts = triads.popcount16<16, Numbers>();
 
         // we might repeat the updating of triads below until we no longer trigger new triad 3/
         // clauses. however, just once delivers most of the benefit, and it's best not to branch.
@@ -682,32 +677,33 @@ private:
 
         // convert positive triads to box restriction messages and send to the three box peers.
         // send these messages in order so that we return to the inbound peer last.
-        int peer[3](tables.mod3[from_peer + 1], tables.mod3[from_peer + 2], from_peer);
+        int peer[3] = { tables.mod3[from_peer + 1], tables.mod3[from_peer + 2], from_peer };
         auto & box_peers = tables.box_peers[vertical][band_idx];
         BitVec08x16 peer_triads[3]{ triads.low, triads.low.rotateCols(), triads.high };
         return (boxRestrict<vertical>(state, box_peers[peer[0]],
-                        positiveTriadsToBoxCandidates(peer_triads[peer[0]], vertical)) &&
+                        positiveTriadsToBoxCandidates<vertical>(peer_triads[peer[0]])) &&
                 boxRestrict<vertical>(state, box_peers[peer[1]],
-                        positiveTriadsToBoxCandidates(peer_triads[peer[1]], vertical)) &&
+                        positiveTriadsToBoxCandidates<vertical>(peer_triads[peer[1]])) &&
                 boxRestrict<vertical>(state, box_peers[peer[2]],
-                        positiveTriadsToBoxCandidates(peer_triads[peer[2]], vertical)));
+                        positiveTriadsToBoxCandidates<vertical>(peer_triads[peer[2]])));
     }
 
-    // convert band configuration into an equivalent 3x3 matrix of positive triad candidates,
+    // Convert band configuration into an equivalent 3x3 matrix of positive triad candidates,
     // where each row represents the constraints the band imposes on a given box peer.
-    static inline BitVec16x16 configurationsToPositiveTriads(const BitVec08x16 &configurations) {
+    static inline BitVec16x16 configurationsToPositiveTriads(const BitVec08x16 & configurations) {
         BitVec16x16 tmp{configurations, configurations};
-        return tmp.shuffle(tables.shuffle_configs_to_triads[0]) |
-               tmp.shuffle(tables.shuffle_configs_to_triads[1]);
+        return (tmp.shuffle(tables.shuffle_configs_to_triads[0]) |
+                tmp.shuffle(tables.shuffle_configs_to_triads[1]));
     }
 
-    // convert 3 sets of positive triads (found in cells 0,1,2 of the given BitVec08x16) into a
+    // Convert 3 sets of positive triads (found in cells 0,1,2 of the given BitVec08x16) into a
     // mask for restricting the corresponding box peer.
-    static inline BitVec16x16 positiveTriadsToBoxCandidates(const BitVec08x16 & triads, int orientation) {
+    template <int vertical>
+    static inline BitVec16x16 positiveTriadsToBoxCandidates(const BitVec08x16 & triads) {
         BitVec08x16 triads_with_kAll = triads | BitVec08x16{0x0, 0x0, 0x0, kAll, 0x0, 0x0, 0x0, 0x0};
         BitVec16x16 tmp{triads_with_kAll, triads_with_kAll};
-        return tmp.shuffle(tables.pos_triads_to_candidates[orientation][0]) |
-               tmp.shuffle(tables.pos_triads_to_candidates[orientation][1]);
+        return (tmp.shuffle(tables.pos_triads_to_candidates[vertical][0]) |
+                tmp.shuffle(tables.pos_triads_to_candidates[vertical][1]));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -734,7 +730,7 @@ private:
                 (uint16_t)state.bands[1][2].configurations.popcount(),
                 (uint16_t)0xFFFF,
                 (uint16_t)0xFFFF
-        ).minPosGreaterThanOrEqual(10);
+        ).minPosGreaterThanOrEqual<10>();
 
         // if we have an unfixed band then find a digit in the band with the fewest possibilities.
         // the approach below is faster than actually counting the configuration for each digit and
@@ -782,6 +778,57 @@ private:
             }
         }
         return { best_band, BitVec08x16::full16(0) };
+    }
+
+    template <int vertical>
+    void branchOnBandAndValue(int band_idx, const BitVec08x16 & value_mask, State & state) {
+        Band & band = state.bands[vertical][band_idx];
+        // We enter with two or more possible configurations for this value
+        BitVec08x16 value_configurations = band.configurations & value_mask;
+        // Assign the first configuration by eliminating the others
+        this->num_guesses_++;
+        State next_state = state;
+        BitVec08x16 assignment_elims = value_configurations.clearLowBit();
+        next_state.bands[vertical][band_idx].eliminations |= assignment_elims;
+        if (bandEliminate<vertical>(next_state, band_idx)) {
+            countSolutionsConsistentWithPartialAssignment(next_state);
+            if (this->num_solutions_ >= this->limit_solutions_) return;
+        }
+        // now negate the first configuration
+        BitVec08x16 negation_elims = value_configurations ^ assignment_elims;
+        state.bands[vertical][band_idx].eliminations |= negation_elims;
+        if (bandEliminate<vertical>(state, band_idx)) {
+            countSolutionsConsistentWithPartialAssignment(state);
+        }
+    }
+
+    //
+    // Do not call this twice on the same state. for efficiency this count may modify the
+    // given state instead of making copies. if called with limit > 1 this can leave the state
+    // changed in a way that makes subsequent calls return different results.
+    //
+    void countSolutionsConsistentWithPartialAssignment(State & state) {
+        auto band_and_value = chooseBandAndValueToBranch(state);
+        if (band_and_value.first == NONE) {
+            this->num_solutions_++;
+            if (this->num_solutions_ == this->limit_solutions_)
+                this->result_state_ = state;
+        } else {
+            if (band_and_value.first < 3) {
+                branchOnBandAndValue<kHorizontal>(
+                        tables.mod3[band_and_value.first], band_and_value.second, state);
+            } else {
+                branchOnBandAndValue<kVertical>(
+                        tables.mod3[band_and_value.first], band_and_value.second, state);
+            }
+        }
+    }
+
+    size_t safeCountSolutionsConsistentWithPartialAssignment(State state, size_t limit) {
+        this->num_solutions_ = 0;
+        this->limit_solutions_ = limit;
+        countSolutionsConsistentWithPartialAssignment(state);
+        return this->num_solutions_;
     }
 
     static
@@ -840,9 +887,9 @@ private:
         // after the first of these calls. most will be no-ops, but we've still got to do them
         // since this cannot be guaranteed.
         //
-        return (bandEliminate<0>(state, 0, 1) && bandEliminate<1>(state, 0, 1) &&
-                bandEliminate<0>(state, 1, 2) && bandEliminate<1>(state, 1, 2) &&
-                bandEliminate<0>(state, 2, 0) && bandEliminate<1>(state, 2, 0));
+        return (bandEliminate<kHorizontal>(state, 0, 1) && bandEliminate<kVertical>(state, 0, 1) &&
+                bandEliminate<kHorizontal>(state, 1, 2) && bandEliminate<kVertical>(state, 1, 2) &&
+                bandEliminate<kHorizontal>(state, 2, 0) && bandEliminate<kVertical>(state, 2, 0));
     }
 
     static
@@ -878,9 +925,9 @@ private:
         // after the first of these calls. most will be no-ops, but we've still got to do them
         // since this cannot be guaranteed.
         //
-        return (bandEliminate<0>(state, 0, 1) && bandEliminate<1>(state, 0, 1) &&
-                bandEliminate<0>(state, 1, 2) && bandEliminate<1>(state, 1, 2) &&
-                bandEliminate<0>(state, 2, 0) && bandEliminate<1>(state, 2, 0));
+        return (bandEliminate<kHorizontal>(state, 0, 1) && bandEliminate<kVertical>(state, 0, 1) &&
+                bandEliminate<kHorizontal>(state, 1, 2) && bandEliminate<kVertical>(state, 1, 2) &&
+                bandEliminate<kHorizontal>(state, 2, 0) && bandEliminate<kVertical>(state, 2, 0));
     }
 
 public:
@@ -915,10 +962,16 @@ public:
     JSTD_NO_INLINE
     size_t solve(const char * puzzle, char * solution, size_t limit) {
         State & state = this->state_;
-        size_t candidates = Sudoku::kMinInitCandidates;
+#if 1
         bool success = this->initSudoku(puzzle, state);
+        if (!success)
+            return -1;
+#else
+        size_t candidates;
+        bool success = this->initSudoku(puzzle, state, candidates);
         if (!success || candidates < (intptr_t)Sudoku::kMinInitCandidates)
             return -1;
+#endif
 
         this->resetStatistics(limit);
 

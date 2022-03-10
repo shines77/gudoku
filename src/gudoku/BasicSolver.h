@@ -41,9 +41,9 @@ public:
     }
     ~BasicSolver() {}
 
-    size_t get_num_guesses() { return this->num_guesses_; }
-    size_t get_num_solutions() { return this->num_solutions_; }
-    size_t get_limit_solutions() { return this->limit_solutions_; }
+    size_t get_num_guesses() const { return this->num_guesses_; }
+    size_t get_num_solutions() const { return this->num_solutions_; }
+    size_t get_limit_solutions() const { return this->limit_solutions_; }
 
     void set_num_guesses(size_t num_guesses) {
         this->num_guesses_ = num_guesses;
@@ -53,6 +53,10 @@ public:
     }
     void set_limit_solutions(size_t limit_solutions) {
         this->limit_solutions_ = limit_solutions;
+    }
+
+    void inc_num_guesses() {
+        this->num_guesses_++;
     }
 
     static size_t calc_empties(const Board & board) {
