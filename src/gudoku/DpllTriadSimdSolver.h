@@ -350,7 +350,7 @@ struct Tables {
     const int mod3[9] = { 0, 1, 2, 0, 1, 2, 0, 1, 2 };
 
     const uint32_t box_base_tbl[9] = {
-        0, 3, 9, 27, 30, 33, 54, 57, 60
+        0, 3, 6, 27, 30, 33, 54, 57, 60
     };
     const uint16_t digit_to_candidate[128] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 00
@@ -935,7 +935,7 @@ public:
     void extractMiniRow(uint64_t minirow, uint32_t minirow_base, char * solution) {
         solution[minirow_base + 0] = tables.bitmask_to_digit[uint16_t((minirow >> 0u ) & 0xFFFF)];
         solution[minirow_base + 1] = tables.bitmask_to_digit[uint16_t((minirow >> 16u) & 0xFFFF)];
-        solution[minirow_base + 2] = tables.bitmask_to_digit[uint32_t( minirow >> 32u) & 0xFFFFFFFFU];
+        solution[minirow_base + 2] = tables.bitmask_to_digit[uint32_t( minirow >> 32u) & 0xFFFFU];
     }
 
     static
@@ -961,8 +961,9 @@ public:
 
     JSTD_NO_INLINE
     size_t solve(const char * puzzle, char * solution, size_t limit) {
-        State & state = this->state_;
         this->resetStatistics(limit);
+
+        State & state = this->state_;
 #if 1
         bool success = this->initSudoku(puzzle, state);
         if (success) {
