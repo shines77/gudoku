@@ -947,9 +947,14 @@ struct Sudoku {
         for (size_t row = 0; row < kRows; row++) {
             printf(" | ");
             for (size_t col = 0; col < kCols; col++) {
-                char val = board.cells[pos++];
-                if (val == ' ' || val == '0' || val == '-')
+                unsigned char val = (unsigned char)board.cells[pos++];
+                //if (val == ' ' || val == '0' || val == '-')
+                if (val == ' ' || val == '-')
                     printf(". ");
+                else if (val == '\0')
+                    printf("* ");
+                else if (val < ' ')
+                    printf("? ");
                 else
                     printf("%c ", val);
                 if ((col % kBoxCellsX) == (kBoxCellsX - 1))

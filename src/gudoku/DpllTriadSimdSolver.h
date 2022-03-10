@@ -205,7 +205,7 @@ static const uint16_t shuf04 = 0x0908, shuf05 = 0X0B0A, shuf06 = 0X0D0C, shuf07 
 
 struct Tables {
     // @formatter:off
-    // used when assigning a candidate during initialization
+    // Used when assigning a candidate during initialization
     BitVec16x16 cell_assignment_eliminations[9][16];
 
     //   config       0       1       2       3       4       5
@@ -221,22 +221,22 @@ struct Tables {
     //
     const BitVec08x16 peer_x_elem_to_config_mask[3][4] = {
         {
-            {   0,   kAll,   kAll,   kAll,      0,   kAll,    0,    0},
-            {kAll,      0,   kAll,   kAll,   kAll,      0,    0,    0},
-            {kAll,   kAll,      0,      0,   kAll,   kAll,    0,    0},
-            {   0,      0,      0,      0,      0,      0,    0,    0}
-        },
-        {
-            {kAll,   kAll,      0,   kAll,   kAll,      0,    0,    0},
-            {   0,   kAll,   kAll,      0,   kAll,   kAll,    0,    0},
-            {kAll,      0,   kAll,   kAll,      0,   kAll,    0,    0},
-            {   0,      0,      0,      0,      0,      0,    0,    0}
-        },
-        {
-            {kAll,      0,   kAll,      0,   kAll,   kAll,    0,    0},
-            {kAll,   kAll,      0,   kAll,      0,   kAll,    0,    0},
-            {   0,   kAll,   kAll,   kAll,   kAll,      0,    0,    0},
-            {   0,      0,      0,      0,      0,      0,    0,    0}
+            {    0,   kAll,   kAll,   kAll,      0,   kAll,    0,    0 },
+            { kAll,      0,   kAll,   kAll,   kAll,      0,    0,    0 },
+            { kAll,   kAll,      0,      0,   kAll,   kAll,    0,    0 },
+            {    0,      0,      0,      0,      0,      0,    0,    0 }
+        },                                                             
+        {                                                              
+            { kAll,   kAll,      0,   kAll,   kAll,      0,    0,    0 },
+            {    0,   kAll,   kAll,      0,   kAll,   kAll,    0,    0 },
+            { kAll,      0,   kAll,   kAll,      0,   kAll,    0,    0 },
+            {    0,      0,      0,      0,      0,      0,    0,    0 }
+        },                                                             
+        {                                                              
+            { kAll,      0,   kAll,      0,   kAll,   kAll,    0,    0 },
+            { kAll,   kAll,      0,   kAll,      0,   kAll,    0,    0 },
+            {    0,   kAll,   kAll,   kAll,   kAll,      0,    0,    0 },
+            {    0,      0,      0,      0,      0,      0,    0,    0 }
         }
     };
 
@@ -356,7 +356,7 @@ struct Tables {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 00
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 10
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 20
-        0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 0, 0, 0, 0, 0, 0,     // 30
+        0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 0, 0, 0, 0, 0,     // 30
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 40
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 50
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 60
@@ -425,14 +425,15 @@ struct Tables {
             }
         }
 
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                triads_shift0_to_config_elims16[i * 3 + j] =
-                        BitVec16x16{triads_shift0_to_config_elims[i],triads_shift0_to_config_elims[j]};
-                triads_shift1_to_config_elims16[i * 3 + j] =
-                        BitVec16x16{triads_shift1_to_config_elims[i],triads_shift1_to_config_elims[j]};
-                triads_shift2_to_config_elims16[i * 3 + j] =
-                        BitVec16x16{triads_shift2_to_config_elims[i],triads_shift2_to_config_elims[j]};
+        for (int x = 0; x < Sudoku::kBoxCountX; x++) {
+            for (int y = 0; y < Sudoku::kBoxCountY; y++) {
+                int box_idx = x * Sudoku::kBoxCountY + y;
+                triads_shift0_to_config_elims16[box_idx] =
+                        BitVec16x16{triads_shift0_to_config_elims[x], triads_shift0_to_config_elims[y]};
+                triads_shift1_to_config_elims16[box_idx] =
+                        BitVec16x16{triads_shift1_to_config_elims[x], triads_shift1_to_config_elims[y]};
+                triads_shift2_to_config_elims16[box_idx] =
+                        BitVec16x16{triads_shift2_to_config_elims[x], triads_shift2_to_config_elims[y]};
             }
         }
 
@@ -539,14 +540,14 @@ private:
 
         } while (eliminating.hasIntersects(box.cells));
 
-        // send elimination messages to horizontal and vertical peers. Prefer to send the first
+        // Send elimination messages to horizontal and vertical peers. Prefer to send the first
         // of these messages to the peer whose orientation is opposite that of the inbound peer.
         if (from_vertical) {
-            return (bandEliminate<0>(state, box_y, box_x) &&
-                    bandEliminate<1>(state, box_x, box_y));
+            return (bandEliminate<kHorizontal>(state, box_y, box_x) &&
+                    bandEliminate<kVertical>  (state, box_x, box_y));
         } else {
-            return (bandEliminate<1>(state, box_x, box_y) &&
-                    bandEliminate<0>(state, box_y, box_x));
+            return (bandEliminate<kVertical>  (state, box_x, box_y) &&
+                    bandEliminate<kHorizontal>(state, box_y, box_x));
         }
     }
 
@@ -599,11 +600,11 @@ private:
         );
         BitVec16x16 new_eliminations = BitVec16x16::X_or_Y_or_Z(
                 hv_neg_triad_assertions.shuffle(
-                        tables.triads_shift0_to_config_elims16[box_x * 3 + box_y]),
+                        tables.triads_shift0_to_config_elims16[box_x * BoxCountX + box_y]),
                 hv_pos_triad_assertions.shuffle(
-                        tables.triads_shift1_to_config_elims16[box_x * 3 + box_y]),
+                        tables.triads_shift1_to_config_elims16[box_x * BoxCountX + box_y]),
                 hv_pos_triad_assertions.shuffle(
-                        tables.triads_shift2_to_config_elims16[box_x * 3 + box_y]));
+                        tables.triads_shift2_to_config_elims16[box_x * BoxCountX + box_y]));
         h_band_eliminations |= new_eliminations.low;
         v_band_eliminations |= new_eliminations.high;
     }
@@ -836,7 +837,7 @@ private:
     void initClue(const char * puzzle, State & state, uint32_t pos) {
         const BoxIndexing & indexing = tables.box_indexing[pos];
         int8_t digit = (int8_t)puzzle[pos];
-        assert(digit >= '0' && digit <= '9');
+        assert(digit >= '1' && digit <= '9');
         uint16_t candidate = tables.digit_to_candidate[digit];
         assert(candidate == (uint16_t)(1U << (uint32_t)(digit - '1')));
         //
