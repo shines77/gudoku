@@ -23,12 +23,15 @@
 
 using namespace gudoku;
 
+namespace gudoku {
+    static DpllTriadSimdSolver dpllTriadSimdSolver;
+}
+
 size_t gudoku_solver(const char * sudoku, char * soulution,
                      size_t limit, size_t * num_guesses)
 {
-    DpllTriadSimdSolver solver;
-    size_t solutions = solver.solve(sudoku, solution, limit);
-    *num_guesses = solver.get_num_guesses();
+    size_t solutions = dpllTriadSimdSolver.solve(sudoku, solution, limit);
+    *num_guesses = dpllTriadSimdSolver.get_num_guesses();
     return solutions;
 }
 
