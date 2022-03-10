@@ -252,7 +252,7 @@ struct BoxIndexing {
 static const uint16_t shuf00 = 0x0100, shuf01 = 0x0302, shuf02 = 0x0504, shuf03 = 0x0706;
 static const uint16_t shuf04 = 0x0908, shuf05 = 0X0B0A, shuf06 = 0X0D0C, shuf07 = 0X0F0E;
 
-struct Tables {
+struct alignas(32) Tables {
     // @formatter:off
     // Used when assigning a candidate during initialization
     BitVec16x16 cell_assignment_eliminations[9][16];
@@ -296,20 +296,23 @@ struct Tables {
     // in the peer. look first at the shift0 table to see the correspondence with
     // the configuration diagram reproduced above.
     //
-    const BitVec08x16 triads_shift0_to_config_elims[3] = {
+    const BitVec08x16 triads_shift0_to_config_elims[4] = {
         { shuf04, shuf05, shuf06, shuf06, shuf04, shuf05, 0xFFFF, 0xFFFF },
         { shuf05, shuf06, shuf04, shuf05, shuf06, shuf04, 0xFFFF, 0xFFFF },
-        { shuf06, shuf04, shuf05, shuf04, shuf05, shuf06, 0xFFFF, 0xFFFF }
+        { shuf06, shuf04, shuf05, shuf04, shuf05, shuf06, 0xFFFF, 0xFFFF },
+        {      0,      0,      0,      0,      0,      0,      0,      0 }
     };
-    const BitVec08x16 triads_shift1_to_config_elims[3] = {
+    const BitVec08x16 triads_shift1_to_config_elims[4] = {
         { shuf05, shuf06, shuf04, shuf04, shuf05, shuf06, 0xFFFF, 0xFFFF },
         { shuf06, shuf04, shuf05, shuf06, shuf04, shuf05, 0xFFFF, 0xFFFF },
-        { shuf04, shuf05, shuf06, shuf05, shuf06, shuf04, 0xFFFF, 0xFFFF }
+        { shuf04, shuf05, shuf06, shuf05, shuf06, shuf04, 0xFFFF, 0xFFFF },
+        {      0,      0,      0,      0,      0,      0,      0,      0 }
     };
-    const BitVec08x16 triads_shift2_to_config_elims[3] = {
+    const BitVec08x16 triads_shift2_to_config_elims[4] = {
         { shuf06, shuf04, shuf05, shuf05, shuf06, shuf04, 0xFFFF, 0xFFFF },
         { shuf04, shuf05, shuf06, shuf04, shuf05, shuf06, 0xFFFF, 0xFFFF },
-        { shuf05, shuf06, shuf04, shuf06, shuf04, shuf05, 0xFFFF, 0xFFFF }
+        { shuf05, shuf06, shuf04, shuf06, shuf04, shuf05, 0xFFFF, 0xFFFF },
+        {      0,      0,      0,      0,      0,      0,      0,      0 }
     };
 
     // BitVec16x16 shuffle control vectors constructed from the 9 pairings of 3x3 vectors in
@@ -381,10 +384,11 @@ struct Tables {
         shuf02, shuf00, shuf01, shuf03, shuf04, shuf05, shuf06, shuf07
     );
 
-    const BitVec08x16 one_value_mask[9] = {
+    const BitVec08x16 one_value_mask[10] = {
         BitVec08x16::full16(1u << 0u), BitVec08x16::full16(1u << 1u), BitVec08x16::full16(1u << 2u),
         BitVec08x16::full16(1u << 3u), BitVec08x16::full16(1u << 4u), BitVec08x16::full16(1u << 5u),
         BitVec08x16::full16(1u << 6u), BitVec08x16::full16(1u << 7u), BitVec08x16::full16(1u << 8u),
+        BitVec08x16::full16(1u << 9u)
     };
 
     const int box_peers[2][3][3] = {
