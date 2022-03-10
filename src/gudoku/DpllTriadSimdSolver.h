@@ -600,11 +600,11 @@ private:
         );
         BitVec16x16 new_eliminations = BitVec16x16::X_or_Y_or_Z(
                 hv_neg_triad_assertions.shuffle(
-                        tables.triads_shift0_to_config_elims16[box_x * BoxCountX + box_y]),
+                        tables.triads_shift0_to_config_elims16[box_x * BoxCountY + box_y]),
                 hv_pos_triad_assertions.shuffle(
-                        tables.triads_shift1_to_config_elims16[box_x * BoxCountX + box_y]),
+                        tables.triads_shift1_to_config_elims16[box_x * BoxCountY + box_y]),
                 hv_pos_triad_assertions.shuffle(
-                        tables.triads_shift2_to_config_elims16[box_x * BoxCountX + box_y]));
+                        tables.triads_shift2_to_config_elims16[box_x * BoxCountY + box_y]));
         h_band_eliminations |= new_eliminations.low;
         v_band_eliminations |= new_eliminations.high;
     }
