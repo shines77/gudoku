@@ -95,6 +95,13 @@
 
 /////////////////////////////////////////////
 
+#ifndef _mm_setr_epi64x
+#define _mm_setr_epi64x(high, low) \
+        _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
+#endif
+
+/////////////////////////////////////////////
+
 #ifndef _mm256_set_m128
 #define _mm256_set_m128(hi, lo) \
         _mm256_insertf128_ps(_mm256_castps128_ps256(lo), (hi), 0x1)
@@ -199,10 +206,6 @@
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
 // x64 mode have no _mm_setr_epi64()
 #else
-#ifndef _mm_setr_epi64x
-#define _mm_setr_epi64x(high, low) \
-        _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
-#endif
 #endif // __amd64__
 
 /////////////////////////////////////////////
