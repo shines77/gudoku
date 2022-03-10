@@ -241,6 +241,14 @@
 //   dst[127:0] := tmp[127:0]
 //
 
+// for functions like extract below where we use switches to determine which immediate to use
+// we'll assume only valid values are passed and omit the default, thereby allowing the compiler's
+// assumption of defined behavior to optimize away a branch.
+#if !defined(_MSC_VER)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
+#endif
+
 namespace gudoku {
 
 #pragma pack(push, 1)
@@ -3773,5 +3781,9 @@ typedef BitVec16x16_SSE     BitVec16x16;
 #endif // __AVX2__
 
 } // namespace gudoku
+
+#if !defined(_MSC_VER)
+#pragma GCC diagnostic pop
+#endif
 
 #endif // GUDOKU_BITVEC_H
