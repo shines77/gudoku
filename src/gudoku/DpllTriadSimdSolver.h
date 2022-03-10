@@ -106,10 +106,18 @@ struct alignas(32) State {
     Box  boxes[9];
 
     State() noexcept {}
+    State(const State & src) noexcept {
+        this->copy(src);
+    }
 
-    void init() {
+    inline State & operator = (const State & rhs) {
+        this->copy(rhs);
+        return *this;
+    }
+
+    inline void init() {
 #if 1
-        BitVec16x16_AVX default_band(kAll32, kAll32, kAll32, 0, 0, 0, 0, 0);
+        const BitVec16x16_AVX default_band(kAll32, kAll32, kAll32, 0, 0, 0, 0, 0);
         default_band.saveAligned((void *)&bands[0][0].configurations);
         default_band.saveAligned((void *)&bands[0][1].configurations);
         default_band.saveAligned((void *)&bands[0][2].configurations);
@@ -117,7 +125,7 @@ struct alignas(32) State {
         default_band.saveAligned((void *)&bands[1][1].configurations);
         default_band.saveAligned((void *)&bands[1][2].configurations);
 
-        BitVec16x16_AVX default_box(kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32);
+        const BitVec16x16_AVX default_box(kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32);
         default_box.saveAligned((void *)&boxes[0].cells);
         default_box.saveAligned((void *)&boxes[1].cells);
         default_box.saveAligned((void *)&boxes[2].cells);
@@ -128,7 +136,7 @@ struct alignas(32) State {
         default_box.saveAligned((void *)&boxes[7].cells);
         default_box.saveAligned((void *)&boxes[8].cells);
 #else
-        BitVec08x16 default_band(kAll, kAll, kAll, kAll, kAll, kAll, 0, 0);
+        const BitVec08x16 default_band(kAll, kAll, kAll, kAll, kAll, kAll, 0, 0);
         BitVec08x16 zeros;
         zeros.setAllZeros();
         bands[0][0].configurations = default_band;
@@ -144,7 +152,7 @@ struct alignas(32) State {
         bands[1][2].configurations = default_band;
         bands[1][2].eliminations = zeros;
 
-        BitVec16x16 default_box(kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32);
+        const BitVec16x16 default_box(kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32, kAll32);
         boxes[0].cells = default_box;
         boxes[1].cells = default_box;
         boxes[2].cells = default_box;
@@ -154,6 +162,47 @@ struct alignas(32) State {
         boxes[6].cells = default_box;
         boxes[7].cells = default_box;
         boxes[8].cells = default_box;
+#endif
+    }
+
+    inline void copy(const State & other) {
+        this->bands[0][0].configurations = other.bands[0][0].configurations;
+        this->bands[0][0].eliminations = other.bands[0][0].eliminations;
+        this->bands[0][1].configurations = other.bands[0][1].configurations;;
+        this->bands[0][1].eliminations = other.bands[0][1].eliminations;;
+        this->bands[0][2].configurations = other.bands[0][2].configurations;;
+        this->bands[0][2].eliminations = other.bands[0][2].eliminations;;
+        this->bands[1][0].configurations = other.bands[1][0].configurations;;
+        this->bands[1][0].eliminations = other.bands[1][0].eliminations;;
+        this->bands[1][1].configurations = other.bands[1][1].configurations;;
+        this->bands[1][1].eliminations = other.bands[1][1].eliminations;;
+        this->bands[1][2].configurations = other.bands[1][2].configurations;;
+        this->bands[1][2].eliminations = other.bands[1][2].eliminations;;
+
+        this->copy_boxes(other);
+    }
+
+    inline void copy_boxes(const State & other) {
+#if 1
+        this->boxes[0].cells = other.boxes[0].cells;
+        this->boxes[1].cells = other.boxes[1].cells;
+        this->boxes[2].cells = other.boxes[2].cells;
+        this->boxes[3].cells = other.boxes[3].cells;
+        this->boxes[4].cells = other.boxes[4].cells;
+        this->boxes[5].cells = other.boxes[5].cells;
+        this->boxes[6].cells = other.boxes[6].cells;
+        this->boxes[7].cells = other.boxes[7].cells;
+        this->boxes[8].cells = other.boxes[8].cells;
+#else
+        this->boxes[0].cells.saveAligned((void *)&other.boxes[0].cells);
+        this->boxes[1].cells.saveAligned((void *)&other.boxes[1].cells);
+        this->boxes[2].cells.saveAligned((void *)&other.boxes[2].cells);
+        this->boxes[3].cells.saveAligned((void *)&other.boxes[3].cells);
+        this->boxes[4].cells.saveAligned((void *)&other.boxes[4].cells);
+        this->boxes[5].cells.saveAligned((void *)&other.boxes[5].cells);
+        this->boxes[6].cells.saveAligned((void *)&other.boxes[6].cells);
+        this->boxes[7].cells.saveAligned((void *)&other.boxes[7].cells);
+        this->boxes[8].cells.saveAligned((void *)&other.boxes[8].cells);
 #endif
     }
 };
@@ -274,12 +323,12 @@ struct Tables {
     // positive triads (refer again to the configuration diagram above).
     const BitVec16x16 shuffle_configs_to_triads[2] = {
         {
-            { shuf00, shuf01, shuf02, 0xFFFF, shuf02, shuf00, shuf01, 0xFFFF },
-            { shuf01, shuf02, shuf00, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF }
+            BitVec08x16 { shuf00, shuf01, shuf02, 0xFFFF, shuf02, shuf00, shuf01, 0xFFFF },
+            BitVec08x16 { shuf01, shuf02, shuf00, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF }
         },
         {
-            { shuf04, shuf05, shuf03, 0xFFFF, shuf05, shuf03, shuf04, 0xFFFF },
-            { shuf03, shuf04, shuf05, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF }
+            BitVec08x16 { shuf04, shuf05, shuf03, 0xFFFF, shuf05, shuf03, shuf04, 0xFFFF },
+            BitVec08x16 { shuf03, shuf04, shuf05, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF }
         }
     };
 
@@ -293,23 +342,23 @@ struct Tables {
         // horizontal
         {
             {
-                { shuf00, shuf00, shuf00, shuf01, shuf01, shuf01, shuf01, shuf02 },
-                { shuf02, shuf02, shuf02, shuf00, shuf03, shuf03, shuf03, shuf03 }
+                BitVec08x16 { shuf00, shuf00, shuf00, shuf01, shuf01, shuf01, shuf01, shuf02 },
+                BitVec08x16 { shuf02, shuf02, shuf02, shuf00, shuf03, shuf03, shuf03, shuf03 }
             },
             {
-                { shuf00, shuf00, shuf00, shuf02, shuf01, shuf01, shuf01, shuf00 },
-                { shuf02, shuf02, shuf02, shuf01, shuf03, shuf03, shuf03, shuf03 }
+                BitVec08x16 { shuf00, shuf00, shuf00, shuf02, shuf01, shuf01, shuf01, shuf00 },
+                BitVec08x16 { shuf02, shuf02, shuf02, shuf01, shuf03, shuf03, shuf03, shuf03 }
             }
         },
         // vertical
         {
             {
-                { shuf00, shuf01, shuf02, shuf03, shuf00, shuf01, shuf02, shuf03 },
-                { shuf00, shuf01, shuf02, shuf03, shuf01, shuf02, shuf00, shuf03 }
+                BitVec08x16 { shuf00, shuf01, shuf02, shuf03, shuf00, shuf01, shuf02, shuf03 },
+                BitVec08x16 { shuf00, shuf01, shuf02, shuf03, shuf01, shuf02, shuf00, shuf03 }
             },
             {
-                { shuf00, shuf01, shuf02, shuf03, shuf00, shuf01, shuf02, shuf03 },
-                { shuf00, shuf01, shuf02, shuf03, shuf02, shuf00, shuf01, shuf03 }
+                BitVec08x16 { shuf00, shuf01, shuf02, shuf03, shuf00, shuf01, shuf02, shuf03 },
+                BitVec08x16 { shuf00, shuf01, shuf02, shuf03, shuf02, shuf00, shuf01, shuf03 }
             }
         }
     };
@@ -352,7 +401,7 @@ struct Tables {
     const uint32_t box_base_tbl[9] = {
         0, 3, 6, 27, 30, 33, 54, 57, 60
     };
-    const uint16_t digit_to_candidate[128] = {
+    const uint16_t digit_to_bitmask[128] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 00
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 10
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 20
@@ -607,15 +656,15 @@ private:
                         tables.triads_shift1_to_config_elims16[box_x * BoxCountY + box_y]),
                 hv_pos_triad_assertions.shuffle(
                         tables.triads_shift2_to_config_elims16[box_x * BoxCountY + box_y]));
-        h_band_eliminations |= new_eliminations.low;
-        v_band_eliminations |= new_eliminations.high;
+        h_band_eliminations |= new_eliminations.getLow();
+        v_band_eliminations |= new_eliminations.getHigh();
     }
 
     // Extracts a BitVec08x16 containing (positive or negative) vertical triad literals in positions
     // 4, 5, and 6 for use in shuffling an elimination message to send the vertical band peer. the
     // contents of other cells are ignored by the shuffle.
     static inline BitVec08x16 verticalTriads(const BitVec16x16 & cells) {
-        return cells.high;
+        return cells.getHigh();
     }
 
     // Extracts a BitVec08x16 containing (positive or negative) horizontal triad literals in positions
@@ -624,9 +673,9 @@ private:
     // elimination messages (and so the vertical triads can be extracted at no cost).
     static inline BitVec08x16 horizontalTriads(const BitVec16x16 & cells) {
         BitVec16x16 split_triads = cells.shuffle(
-                BitVec16x16{{0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, shuf03, shuf07, 0xFFFF, 0xFFFF},
-                            {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, shuf03, 0xFFFF}});
-        return (split_triads.low | split_triads.high);
+                BitVec16x16{BitVec08x16{0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, shuf03, shuf07, 0xFFFF, 0xFFFF},
+                            BitVec08x16{0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, shuf03, 0xFFFF}});
+        return (split_triads.getLow() | split_triads.getHigh());
     }
 
     template <typename RotateFn>
@@ -645,7 +694,7 @@ private:
         one_or_more |= rotated;
         rotated = rotate(rotated);
         two_or_more = BitVec16x16::X_and_Y_or_Z(one_or_more, rotated, two_or_more);
-        // we might rotate again and check that one_or_more == kAll, but the check is a net loss.
+        // We might rotate again and check that one_or_more == kAll, but the check is a net loss.
         // now assert (in cells where they remain) candidates that occur only once an a row/col.
         assertions = BitVec16x16::X_andnot_Y_or_Z(cells, two_or_more, assertions);
     }
@@ -654,20 +703,20 @@ private:
     static bool bandEliminate(State & state, int band_idx, int from_peer = 0) {
         Band & band = state.bands[vertical][band_idx];
         if (likely(!band.configurations.hasIntersects(band.eliminations))) return true;
-        // after eliminating we might check that every value is still consistent with some
+        // After eliminating we might check that every value is still consistent with some
         // configuration, but the check is a net loss.
         band.configurations = band.configurations.and_not(band.eliminations);
 
         BitVec16x16 triads = configurationsToPositiveTriads(band.configurations);
-        // we might check here that every cell (corresponding to a minirow or minicol) still has
+        // We might check here that every cell (corresponding to a minirow or minicol) still has
         // at least three triad candidates, but the check is a net loss.
         BitVec16x16 counts = triads.popcount16<16, Numbers>();
 
-        // we might repeat the updating of triads below until we no longer trigger new triad 3/
+        // We might repeat the updating of triads below until we no longer trigger new triad 3/
         // clauses. however, just once delivers most of the benefit, and it's best not to branch.
         BitVec16x16 asserting = triads & counts.whichIsEqual(BitVec16x16::full16(3));
-        BitVec08x16 low  = asserting.low;
-        BitVec08x16 high = asserting.high;
+        BitVec08x16 low  = asserting.getLow();
+        BitVec08x16 high = asserting.getHigh();
         band.configurations = band.configurations.and_not(BitVec08x16::X_or_Y_or_Z(
                 low.rotateCols().shuffle(tables.triads_shift1_to_config_elims[0]),
                 low.rotateCols().shuffle(tables.triads_shift2_to_config_elims[0]),
@@ -678,11 +727,11 @@ private:
                 high.rotateCols().shuffle(tables.triads_shift2_to_config_elims[2])));
         triads = configurationsToPositiveTriads(band.configurations);
 
-        // convert positive triads to box restriction messages and send to the three box peers.
+        // Convert positive triads to box restriction messages and send to the three box peers.
         // send these messages in order so that we return to the inbound peer last.
         int peer[3] = { tables.mod3[from_peer + 1], tables.mod3[from_peer + 2], from_peer };
         auto & box_peers = tables.box_peers[vertical][band_idx];
-        BitVec08x16 peer_triads[3]{ triads.low, triads.low.rotateCols(), triads.high };
+        BitVec08x16 peer_triads[3]{ triads.getLow(), triads.getLow().rotateCols(), triads.getHigh() };
         return (boxRestrict<vertical>(state, box_peers[peer[0]],
                         positiveTriadsToBoxCandidates<vertical>(peer_triads[peer[0]])) &&
                 boxRestrict<vertical>(state, box_peers[peer[1]],
@@ -795,9 +844,9 @@ private:
         next_state.bands[vertical][band_idx].eliminations |= assignment_elims;
         if (bandEliminate<vertical>(next_state, band_idx)) {
             countSolutionsConsistentWithPartialAssignment(next_state);
-            if (this->num_solutions_ >= this->limit_solutions_) return;
+            if (this->num_solutions_ == this->limit_solutions_) return;
         }
-        // now negate the first configuration
+        // Now negate the first configuration
         BitVec08x16 negation_elims = value_configurations ^ assignment_elims;
         state.bands[vertical][band_idx].eliminations |= negation_elims;
         if (bandEliminate<vertical>(state, band_idx)) {
@@ -814,8 +863,9 @@ private:
         auto band_and_value = chooseBandAndValueToBranch(state);
         if (band_and_value.first == NONE) {
             this->num_solutions_++;
-            if (this->num_solutions_ == this->limit_solutions_)
-                this->result_state_ = state;
+            if (this->num_solutions_ == this->limit_solutions_) {
+                this->result_state_.copy_boxes(state);
+            }
         } else {
             if (band_and_value.first < 3) {
                 branchOnBandAndValue<kHorizontal>(
@@ -840,7 +890,7 @@ private:
         const BoxIndexing & indexing = tables.box_indexing[pos];
         int8_t digit = (int8_t)puzzle[pos];
         assert(digit >= '1' && digit <= '9');
-        uint16_t candidate = tables.digit_to_candidate[digit];
+        uint16_t candidate = tables.digit_to_bitmask[digit];
         assert(candidate == (uint16_t)(1U << (uint32_t)(digit - '1')));
         //
         // Perform eliminations for the clue in its own box, but don't propagate. this is
@@ -867,14 +917,14 @@ private:
     bool initSudoku(const char * puzzle, State & state) {
         state.init();
 
-        uint64_t nonDotMask64 = whichIsNotDots64(puzzle);
+        uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
         while (nonDotMask64 != 0) {
             uint32_t pos = BitUtils::bsf64(nonDotMask64);
             initClue(puzzle, state, pos);
             nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
         }       
 
-        uint32_t nonDotMask16 = whichIsNotDots16(puzzle + 64);
+        uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
             initClue(puzzle, state, pos + 64);
