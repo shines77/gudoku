@@ -229,7 +229,7 @@ template <typename Solver>
 void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
 {
     //printf("------------------------------------------\n\n");
-    printf("gudoku: %s::Solver\n\n", name);
+    printf("gudoku: %s\n\n", name);
 
     size_t total_guesses = 0;
     size_t total_no_guess = 0;
