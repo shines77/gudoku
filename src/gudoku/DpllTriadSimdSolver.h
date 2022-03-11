@@ -38,7 +38,7 @@ static const uint32_t kAll32 = 0x01FF01FFU;
 static const uint64_t kAll64 = 0x01FF01FF01FF01FFULL;
 
 static const size_t kHorizontal = 0;
-static const size_t kVertical = 1;
+static const size_t kVertical   = 1;
 
 //  The state of each box is stored in a vector of 16 uint16_t,     +---+---+---+---+
 //  arranged as a 4x4 matrix of 9-bit candidate sets (the high      | c | c | c | H |
@@ -58,7 +58,13 @@ static const size_t kVertical = 1;
 struct alignas(32) Box {
     BitVec16x16 cells;
 
-    Box() : cells(BitVec16x16::full16(kAll)) {}
+    Box() noexcept : cells(BitVec16x16::full16(kAll)) {}
+    Box(const Box & src) noexcept : cells(src.cells) {}
+
+    inline Box & operator = (const Box & rhs) {
+        this->cells = rhs.cells;
+        return *this;
+    }
 };
 
 // For a given value there are only 6 possible configurations for how that value can be
@@ -98,7 +104,19 @@ struct alignas(32) Band {
     BitVec08x16 configurations;
     BitVec08x16 eliminations;
 
-    Band() : configurations(kAll, kAll, kAll, kAll, kAll, kAll, 0, 0), eliminations(0, 0) {}
+    Band() noexcept
+        : configurations(kAll, kAll, kAll, kAll, kAll, kAll, 0, 0), eliminations(0, 0) {
+    }
+
+    Band(const Band & src) noexcept
+        : configurations(src.configurations), eliminations(src.eliminations) {
+    }
+
+    inline Band & operator = (const Band & rhs) {
+        this->configurations = rhs.configurations;
+        this->eliminations   = rhs.eliminations;
+        return *this;
+    }
 };
 
 struct alignas(32) State {
@@ -207,7 +225,7 @@ struct alignas(32) State {
     }
 };
 
-struct BoxIndexing {
+struct alignas(32) BoxIndexing {
     static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
     static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
     static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
@@ -440,6 +458,10 @@ struct alignas(32) Tables {
          0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,     // 1F0
     };
 
+    const int32_t box_base_tbl[16] = {
+        0, 3, 6, 27, 30, 33, 54, 57, 60, 0, 0, 0, 0, 0, 0, 0
+    };
+
     const int box_peers[2][3][3] = {
         {
             { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 }
@@ -450,10 +472,6 @@ struct alignas(32) Tables {
     };
     const int div3[9] = { 0, 0, 0, 1, 1, 1, 2, 2, 2 };
     const int mod3[9] = { 0, 1, 2, 0, 1, 2, 0, 1, 2 };
-
-    const uint32_t box_base_tbl[9] = {
-        0, 3, 6, 27, 30, 33, 54, 57, 60
-    };
 
     BoxIndexing box_indexing[81];
 
@@ -918,6 +936,7 @@ private:
     }
 
     static
+    JSTD_FORCE_INLINE
     bool initSudoku(const char * puzzle, State & state) {
         state.init();
 
@@ -949,59 +968,23 @@ private:
                 bandEliminate<kHorizontal>(state, 2, 0) && bandEliminate<kVertical>(state, 2, 0));
     }
 
-    static
-    bool initSudoku(const char * puzzle, State & state, size_t & out_candidates) {
-        state.init();
-
-        uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
-        size_t candidates = BitUtils::popcnt64(nonDotMask64);
-        while (nonDotMask64 != 0) {
-            uint32_t pos = BitUtils::bsf64(nonDotMask64);
-            nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
-            initClue(puzzle, state, pos);
-        }       
-
-        uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
-        candidates += BitUtils::popcnt32(nonDotMask16);
-        while (nonDotMask16 != 0) {
-            uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
-            initClue(puzzle, state, pos + 64);
-        }
-
-        if (puzzle[80] != '.') {
-            candidates++;
-            initClue(puzzle, state, 80);
-        }
-
-        out_candidates = candidates;
-
-        //
-        // Thanks to the merging of band updates the puzzle is almost always fully initialized
-        // after the first of these calls. most will be no-ops, but we've still got to do them
-        // since this cannot be guaranteed.
-        //
-        return (bandEliminate<kHorizontal>(state, 0, 1) && bandEliminate<kVertical>(state, 0, 1) &&
-                bandEliminate<kHorizontal>(state, 1, 2) && bandEliminate<kVertical>(state, 1, 2) &&
-                bandEliminate<kHorizontal>(state, 2, 0) && bandEliminate<kVertical>(state, 2, 0));
-    }
-
 public:
     static
     JSTD_FORCE_INLINE
-    void extractMiniRow(uint64_t minirow, uint32_t minirow_base, char * solution) {
+    void extractMiniRow(uint64_t minirow, int32_t minirow_base, char * solution) {
         solution[minirow_base + 0] = tables.bitmask_to_digit[uint16_t((minirow >> 0u ) & 0xFFFF)];
         solution[minirow_base + 1] = tables.bitmask_to_digit[uint16_t((minirow >> 16u) & 0xFFFF)];
         solution[minirow_base + 2] = tables.bitmask_to_digit[uint32_t( minirow >> 32u) & 0xFFFFU];
     }
 
     static
+    JSTD_FORCE_INLINE
     void extractSolution(const State & state, char * solution) {
         for (int box_idx = 0; box_idx < 9; box_idx++) {
             const Box & box = state.boxes[box_idx];
             IntVec256 box_minirows;
             box.cells.saveAligned((void *)&box_minirows);
-            uint32_t box_base = tables.box_base_tbl[box_idx];
+            int32_t box_base = tables.box_base_tbl[box_idx];
             assert(box_base == (tables.div3[box_idx] * 27 + tables.mod3[box_idx] * 3));
             extractMiniRow(box_minirows.u64[0], box_base,      solution);
             extractMiniRow(box_minirows.u64[1], box_base + 9,  solution);
@@ -1020,20 +1003,11 @@ public:
         this->resetStatistics(limit);
 
         State & state = this->state_;
-#if 1
         bool success = this->initSudoku(puzzle, state);
         if (success) {
             countSolutionsConsistentWithPartialAssignment(state);
             extractSolution(this->result_state_, solution);
         }
-#else
-        size_t candidates;
-        bool success = this->initSudoku(puzzle, state, candidates);
-        if (success && (candidates >= Sudoku::kMinInitCandidates)) {
-            countSolutionsConsistentWithPartialAssignment(state);
-            extractSolution(this->result_state_, solution);
-        }
-#endif
         return this->num_solutions_;
     }
 
