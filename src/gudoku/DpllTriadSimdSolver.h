@@ -40,6 +40,31 @@ static const uint64_t kAll64 = 0x01FF01FF01FF01FFULL;
 static const size_t kHorizontal = 0;
 static const size_t kVertical   = 1;
 
+union IntVec64 {
+    struct {
+        int16_t i16_0;
+        int16_t i16_1;
+        int16_t i16_2;
+        int16_t i16_3;
+    };
+    struct {
+        uint16_t u16_0;
+        uint16_t u16_1;
+        uint16_t u16_2;
+        uint16_t u16_3;
+    };
+    struct {
+        int32_t  i32_0;
+        int32_t  i32_1;
+    };
+    struct {
+        uint32_t u32_0;
+        uint32_t u32_1;
+    };
+    int64_t  i64;
+    uint64_t u64;
+};
+
 //  The state of each box is stored in a vector of 16 uint16_t,     +---+---+---+---+
 //  arranged as a 4x4 matrix of 9-bit candidate sets (the high      | c | c | c | H |
 //  7 bits of each value are always zero). The top-left 3x3 sub-    +---+---+---+---+
@@ -968,13 +993,19 @@ private:
                 bandEliminate<kHorizontal>(state, 2, 0) && bandEliminate<kVertical>(state, 2, 0));
     }
 
-public:
     static
     JSTD_FORCE_INLINE
     void extractMiniRow(uint64_t minirow, int32_t minirow_base, char * solution) {
+#if 1
+        IntVec64 * pUInt64 = (IntVec64 *)&minirow;
+        solution[minirow_base + 0] = tables.bitmask_to_digit[pUInt64->u16_0];
+        solution[minirow_base + 1] = tables.bitmask_to_digit[pUInt64->u16_1];
+        solution[minirow_base + 2] = tables.bitmask_to_digit[pUInt64->u16_2];
+#else        
         solution[minirow_base + 0] = tables.bitmask_to_digit[uint16_t((minirow >> 0u ) & 0xFFFF)];
         solution[minirow_base + 1] = tables.bitmask_to_digit[uint16_t((minirow >> 16u) & 0xFFFF)];
-        solution[minirow_base + 2] = tables.bitmask_to_digit[uint32_t( minirow >> 32u) & 0xFFFFU];
+        solution[minirow_base + 2] = tables.bitmask_to_digit[uint16_t( minirow >> 32u) & 0xFFFFU];
+#endif        
     }
 
     static
@@ -999,6 +1030,7 @@ public:
         this->set_limit_solutions(limit);
     }
 
+public:
     size_t solve(const char * puzzle, char * solution, size_t limit) {
         this->resetStatistics(limit);
 
