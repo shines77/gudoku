@@ -556,7 +556,7 @@ private:
     State result_state_;
 
 public:
-    DpllTriadSimdSolver() : basic_solver() {}
+    DpllTriadSimdSolver() : basic_solver(), state_(), result_state_() {}
     ~DpllTriadSimdSolver() {}
 
 private:
@@ -844,7 +844,7 @@ private:
         BitVec08x16 value_configurations = band.configurations & value_mask;
         // Assign the first configuration by eliminating the others
         this->num_guesses_++;
-        State next_state(state);
+        State next_state = state;
         BitVec08x16 assignment_elims = value_configurations.clearLowBit();
         next_state.bands[vertical][band_idx].eliminations |= assignment_elims;
         if (bandEliminate<vertical>(next_state, band_idx)) {
@@ -918,22 +918,21 @@ private:
     }
 
     static
-    JSTD_FORCE_INLINE
     bool initSudoku(const char * puzzle, State & state) {
         state.init();
 
         uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
         while (nonDotMask64 != 0) {
             uint32_t pos = BitUtils::bsf64(nonDotMask64);
-            initClue(puzzle, state, pos);
             nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
+            initClue(puzzle, state, pos);
         }       
 
         uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            initClue(puzzle, state, pos + 64);
             nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
+            initClue(puzzle, state, pos + 64);
         }
 
         if (puzzle[80] != '.') {
@@ -951,7 +950,6 @@ private:
     }
 
     static
-    JSTD_FORCE_INLINE
     bool initSudoku(const char * puzzle, State & state, size_t & out_candidates) {
         state.init();
 
@@ -959,16 +957,16 @@ private:
         size_t candidates = BitUtils::popcnt64(nonDotMask64);
         while (nonDotMask64 != 0) {
             uint32_t pos = BitUtils::bsf64(nonDotMask64);
-            initClue(puzzle, state, pos);
             nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
+            initClue(puzzle, state, pos);
         }       
 
         uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
         candidates += BitUtils::popcnt32(nonDotMask16);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            initClue(puzzle, state, pos + 64);
             nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
+            initClue(puzzle, state, pos + 64);
         }
 
         if (puzzle[80] != '.') {
@@ -989,7 +987,8 @@ private:
     }
 
 public:
-    static inline
+    static
+    JSTD_FORCE_INLINE
     void extractMiniRow(uint64_t minirow, uint32_t minirow_base, char * solution) {
         solution[minirow_base + 0] = tables.bitmask_to_digit[uint16_t((minirow >> 0u ) & 0xFFFF)];
         solution[minirow_base + 1] = tables.bitmask_to_digit[uint16_t((minirow >> 16u) & 0xFFFF)];
@@ -1017,7 +1016,6 @@ public:
         this->set_limit_solutions(limit);
     }
 
-    JSTD_NO_INLINE
     size_t solve(const char * puzzle, char * solution, size_t limit) {
         this->resetStatistics(limit);
 
