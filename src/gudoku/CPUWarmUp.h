@@ -28,6 +28,7 @@ namespace CPU {
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1800)
 
+static
 void warm_up(int delayMillsecs)
 {
 #if !defined(_DEBUG)
@@ -60,6 +61,7 @@ void warm_up(int delayMillsecs)
 
 #else
 
+static
 void warm_up(DWORD delayMillsecs)
 {
 #if !defined(_DEBUG)
