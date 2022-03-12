@@ -2750,7 +2750,7 @@ struct BitVec16x16_AVX {
     }
 
     inline void saveAs4x64(IntVec4x64 & intVec) const {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || 1
         intVec.u64_0 = AVX::mm256_extract_epi64<0>(this->m256);
         intVec.u64_1 = AVX::mm256_extract_epi64<1>(this->m256);
         intVec.u64_2 = AVX::mm256_extract_epi64<2>(this->m256);
