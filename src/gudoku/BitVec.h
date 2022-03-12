@@ -424,7 +424,7 @@ static inline uint32_t mm_cvtsi128_si16(__m128i m128)
 #if defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || defined(__SSE4A__) || defined(__SSE4a__) \
  || defined(__SSE4_1__) || defined(__SSE4_2__)
 
-struct alignas(16) BitVec08x16 {
+struct BitVec08x16 {
     __m128i m128;
 
     BitVec08x16() noexcept {}
@@ -1405,7 +1405,7 @@ struct alignas(16) BitVec08x16 {
 #if defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || defined(__SSE4A__) || defined(__SSE4a__) \
  || defined(__SSE4_1__) || defined(__SSE4_2__)
 
-struct alignas(32) BitVec16x16_SSE {
+struct BitVec16x16_SSE {
     BitVec08x16 low;
     BitVec08x16 high;
 
@@ -1487,7 +1487,7 @@ struct alignas(32) BitVec16x16_SSE {
     }
 
     inline BitVec16x16_SSE & operator = (const BitVec16x16_SSE & right) {
-        this->low = right.low;
+        this->low  = right.low;
         this->high = right.high;
         return *this;
     }
@@ -1734,16 +1734,16 @@ struct alignas(32) BitVec16x16_SSE {
     }
 
     inline bool isNotAllZeros() const {
-        return (this->low.isNotAllZeros() && this->high.isNotAllZeros());
+        return (this->low.isNotAllZeros() || this->high.isNotAllZeros());
     }
 
     inline bool isNotAllOnes() const {
-        return (this->low.isNotAllOnes() && this->high.isNotAllOnes());
+        return (this->low.isNotAllOnes() || this->high.isNotAllOnes());
     }
 
     // Is mixed by zeros and ones
     inline bool isMixZerosAndOnes(const BitVec16x16_SSE & other) const {
-        return (this->low.isMixZerosAndOnes(other.low) && this->high.isMixZerosAndOnes(other.high));
+        return (this->low.isMixZerosAndOnes(other.low) || this->high.isMixZerosAndOnes(other.high));
     }
 
     // Is not all zeros and all ones
@@ -1756,23 +1756,23 @@ struct alignas(32) BitVec16x16_SSE {
     }
 
     inline bool isNotEqual(const BitVec16x16_SSE & other) const {
-        return (this->low.isNotEqual(other.low) && this->high.isNotEqual(other.high));
+        return (this->low.isNotEqual(other.low) || this->high.isNotEqual(other.high));
     }
 
     inline bool hasAnyZero() const {
-        return (this->low.hasAnyZero() && this->high.hasAnyZero());
+        return (this->low.hasAnyZero() || this->high.hasAnyZero());
     }
 
     inline bool hasAnyOne() const {
-        return (this->low.hasAnyOne() && this->high.hasAnyOne());
+        return (this->low.hasAnyOne() || this->high.hasAnyOne());
     }
 
     inline bool hasAnyLessThan(const BitVec16x16_SSE & other) const {
-        return (this->low.hasAnyLessThan(other.low) && this->high.hasAnyLessThan(other.high));
+        return (this->low.hasAnyLessThan(other.low) || this->high.hasAnyLessThan(other.high));
     }
 
     inline bool hasIntersects(const BitVec16x16_SSE & other) const {
-        return (this->low.hasIntersects(other.low) && this->high.hasIntersects(other.high));
+        return (this->low.hasIntersects(other.low) || this->high.hasIntersects(other.high));
     }
 
     inline bool isSubsetOf(const BitVec16x16_SSE & other) const {
@@ -2498,7 +2498,7 @@ struct alignas(32) BitVec16x16_SSE {
 
 #if defined(__AVX2__) || defined(__AVX512VL__) || defined(__AVX512F__)
 
-struct alignas(32) BitVec16x16_AVX {
+struct BitVec16x16_AVX {
     __m256i m256;
 
     BitVec16x16_AVX() noexcept {}
@@ -2928,7 +2928,8 @@ struct alignas(32) BitVec16x16_AVX {
     }
 
     inline BitVec16x16_AVX whichIsMoreThan(const BitVec16x16_AVX & other) const {
-        return _mm256_cmpgt_epi16(this->m256, other.m256);
+        __m256i more_than_mask = _mm256_cmpgt_epi16(this->m256, other.m256);
+        return more_than_mask;
     }
 
     inline BitVec16x16_AVX whichIsLessThan(const BitVec16x16_AVX & other) const {

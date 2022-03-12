@@ -489,7 +489,7 @@ struct alignas(32) Tables {
          0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,     // 1F0
     };
 
-    const int32_t box_base_tbl[16] = {
+    const int box_base_tbl[16] = {
         0, 3, 6, 27, 30, 33, 54, 57, 60, 0, 0, 0, 0, 0, 0, 0
     };
 
@@ -1001,7 +1001,7 @@ private:
 
     static
     JSTD_FORCE_INLINE
-    void extractMiniRow(uint64_t minirow, int32_t minirow_base, char * solution) {
+    void extractMiniRow(uint64_t minirow, int minirow_base, char * solution) {
 #if 1
         IntVec64 * pUInt64 = (IntVec64 *)&minirow;
         solution[minirow_base + 0] = tables.bitmask_to_digit[pUInt64->u16_0];
@@ -1021,7 +1021,7 @@ private:
         for (int box_idx = 0; box_idx < 9; box_idx++) {
             const Box & box = state.boxes[box_idx];
             box.cells.saveAligned((void *)&box_minirows);
-            int32_t box_base = tables.box_base_tbl[box_idx];
+            int box_base = tables.box_base_tbl[box_idx];
             assert(box_base == (tables.div3[box_idx] * 27 + tables.mod3[box_idx] * 3));
             extractMiniRow(box_minirows.u64[0], box_base,      solution);
             extractMiniRow(box_minirows.u64[1], box_base + 9,  solution);
