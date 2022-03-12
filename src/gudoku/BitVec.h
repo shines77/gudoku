@@ -365,7 +365,7 @@ uint64_t mm256_extract_epi64(__m256i src)
     else {
         __m128i m128 = _mm256_extracti128_si256(src, 1);
         return (uint64_t)_mm_extract_epi64(m128, _index);
-    }    
+    }
 #elif defined(__AVX__) && defined(__SSE4_1__)
     if (index >= 0 && index < 2) {
         __m128i m128 = _mm256_extractf128_si256(src);
@@ -374,7 +374,7 @@ uint64_t mm256_extract_epi64(__m256i src)
     else {
         __m128i m128 = _mm256_extractf128_si256(src, 1);
         return (uint64_t)_mm_extract_epi64(m128, _index);
-    } 
+    }
 #else
     // __AVX__ && __SSE2__
     if (index >= 0 && index < 2) {
@@ -851,7 +851,7 @@ struct BitVec08x16 {
         return (_mm_cmp_epi16_mask(this->m128, other.m128, _MM_CMPINT_LT) != 0);
 #elif 1
         BitVec08x16 which_less_than = _mm_cmpgt_epi16(other.m128, this->m128);
-        return (_mm_movemask_epi8(which_less_than.m128) != 0);
+        return which_less_than.isNotAllZeros();
 #else
         BitVec08x16 which_less_than = _mm_cmpgt_epi16(other.m128, this->m128);
         return (_mm_movemask_epi8(which_less_than.m128) != 0);
@@ -863,10 +863,16 @@ struct BitVec08x16 {
     //
     //   ((     a[127:0]  And b[127:0]) == 0) -> noIntersects()
     //                  or
-    //   (((Not a[127:0]) And b[127:0]) == 0) -> isSubsetOf()
+    //   (((Not a[127:0]) And b[127:0]) == 0) -> isSupersetOf()
     //
-    inline bool noIntersects_Or_isSubsetOf(const BitVec08x16 & other) const {
+    inline bool noIntersects_Or_isSupersetOf(const BitVec08x16 & other) const {
+#if defined(__SSE4_1__)
         return (_mm_test_mix_ones_zeros(this->m128, other.m128) == 0);
+#else
+        BitVec08x16 intersects = _mm_and_si128(this->m128, other.m128);
+        BitVec08x16 superset = _mm_andnot_si128(this->m128, other.m128);
+        return (intersects.isAllZeros() || superset.isAllZeros());
+#endif
     }
 
     //
@@ -875,10 +881,16 @@ struct BitVec08x16 {
     //
     //   ((     a[127:0]  And b[127:0]) != 0) -> hasIntersects()
     //                 and
-    //   (((Not a[127:0]) And b[127:0]) != 0) -> isNotSubsetOf()
+    //   (((Not a[127:0]) And b[127:0]) != 0) -> isNotSupersetOf()
     //
-    inline bool hasIntersects_And_isNotSubsetOf(const BitVec08x16 & other) const {
+    inline bool hasIntersects_And_isNotSupersetOf(const BitVec08x16 & other) const {
+#if defined(__SSE4_1__)
         return (_mm_test_mix_ones_zeros(this->m128, other.m128) == 1);
+#else
+        BitVec08x16 intersects = _mm_and_si128(this->m128, other.m128);
+        BitVec08x16 superset = _mm_andnot_si128(this->m128, other.m128);
+        return (intersects.isNotAllZeros() && superset.isNotAllZeros());
+#endif
     }
 
     //
@@ -1732,27 +1744,27 @@ struct BitVec16x16_SSE {
     }
 
     // Logical operation
-    inline BitVec16x16_SSE & self_and(const BitVec16x16_SSE & vec) {
-        this->low.self_and(vec.low);
-        this->high.self_and(vec.high);
+    inline BitVec16x16_SSE & self_and(const BitVec16x16_SSE & other) {
+        this->low.self_and(other.low);
+        this->high.self_and(other.high);
         return *this;
     }
 
-    inline BitVec16x16_SSE & self_and_not(const BitVec16x16_SSE & vec) {
-        this->low.self_and_not(vec.low);
-        this->high.self_and_not(vec.high);
+    inline BitVec16x16_SSE & self_and_not(const BitVec16x16_SSE & other) {
+        this->low.self_and_not(other.low);
+        this->high.self_and_not(other.high);
         return *this;
     }
 
-    inline BitVec16x16_SSE & self_or(const BitVec16x16_SSE & vec) {
-        this->low._or(vec.low);
-        this->high._or(vec.high);
+    inline BitVec16x16_SSE & self_or(const BitVec16x16_SSE & other) {
+        this->low.self_or(other.low);
+        this->high.self_or(other.high);
         return *this;
     }
 
-    inline BitVec16x16_SSE & self_xor(const BitVec16x16_SSE & vec) {
-        this->low.self_xor(vec.low);
-        this->high.self_xor(vec.high);
+    inline BitVec16x16_SSE & self_xor(const BitVec16x16_SSE & other) {
+        this->low.self_xor(other.low);
+        this->high.self_xor(other.high);
         return *this;
     }
 
@@ -1876,15 +1888,15 @@ struct BitVec16x16_SSE {
     }
 
     // Is not all zeros and all ones
-    inline bool noIntersects_Or_isSubsetOf(const BitVec16x16_SSE & other) const {
-        return (this->low.noIntersects_Or_isSubsetOf(other.low) &&
-                this->high.noIntersects_Or_isSubsetOf(other.high));
+    inline bool noIntersects_Or_isSupersetOf(const BitVec16x16_SSE & other) const {
+        return (this->low.noIntersects_Or_isSupersetOf(other.low) &&
+                this->high.noIntersects_Or_isSupersetOf(other.high));
     }
 
     // Is mixed by zeros and ones
-    inline bool hasIntersects_And_isNotSubsetOf(const BitVec16x16_SSE & other) const {
-        return (this->low.hasIntersects_And_isNotSubsetOf(other.low) &&
-                this->high.hasIntersects_And_isNotSubsetOf(other.high));
+    inline bool hasIntersects_And_isNotSupersetOf(const BitVec16x16_SSE & other) const {
+        return (this->low.hasIntersects_And_isNotSupersetOf(other.low) ||
+                this->high.hasIntersects_And_isNotSupersetOf(other.high));
     }
 
     inline bool hasIntersects(const BitVec16x16_SSE & other) const {
@@ -2866,8 +2878,7 @@ struct BitVec16x16_AVX {
 #if defined(__AVX512F__) && defined(__AVX512VL__)
         return _mm256_ternarylogic_epi32(x.m256, y.m256, z.m256, OP_X_and_Y_or_Z);
 #else
-        BitVec16x16_AVX tmp = x;
-        return ((tmp & y) | z);
+        return ((x & y) | z);
 #endif
     }
 
@@ -3021,6 +3032,9 @@ struct BitVec16x16_AVX {
     inline bool hasAnyLessThan(const BitVec16x16_AVX & other) const {
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
         return (_mm256_cmp_epi16_mask(this->m256, other.m256, _MM_CMPINT_LT) != 0);
+#elif 1
+        BitVec16x16_AVX which_less_than = _mm256_cmpgt_epi16(other.m256, this->m256);
+        return which_less_than.isNotAllZeros();
 #else
         BitVec16x16_AVX which_less_than = _mm256_cmpgt_epi16(other.m256, this->m256);
         return (_mm256_movemask_epi8(which_less_than.m256) != 0);
@@ -3028,12 +3042,12 @@ struct BitVec16x16_AVX {
     }
 
     // Is not all zeros and all ones
-    inline bool noIntersects_Or_isSubsetOf(const BitVec16x16_AVX & other) const {
+    inline bool noIntersects_Or_isSupersetOf(const BitVec16x16_AVX & other) const {
         return (_mm256_test_mix_ones_zeros(this->m256, other.m256) == 0);
     }
 
     // Is mixed by zeros and ones
-    inline bool hasIntersects_And_isNotSubsetOf(const BitVec16x16_AVX & other) const {
+    inline bool hasIntersects_And_isNotSupersetOf(const BitVec16x16_AVX & other) const {
         return (_mm256_test_mix_ones_zeros(this->m256, other.m256) == 1);
     }
 
@@ -3906,7 +3920,7 @@ uint64_t whichIsNotDots64(const char * p) {
 }
 
 #if defined(__AVX2__) || defined(__AVX512VL__) || defined(__AVX512F__)
-typedef BitVec16x16_AVX     BitVec16x16;
+typedef BitVec16x16_SSE     BitVec16x16;
 #else
 typedef BitVec16x16_SSE     BitVec16x16;
 #endif // __AVX2__
