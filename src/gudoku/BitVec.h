@@ -979,9 +979,14 @@ struct BitVec08x16 {
     }
 
     inline BitVec08x16 whichIsNonZero() const {
+#if 1
+        // Note: This is an optimized version, which may not be perfect logically.
+        return _mm_cmpgt_epi16(this->m128, _mm_setzero_si128());
+#else
         BitVec08x16 zeros;
         zeros.setAllZeros();
         return this->whichIsNotEqual(zeros);
+#endif
     }
 
     inline BitVec08x16 whichIsMoreThanZero() const {
@@ -3108,9 +3113,14 @@ struct BitVec16x16_AVX {
     }
 
     inline BitVec16x16_AVX whichIsNonZero() const {
+#if 1
+        // Note: This is an optimized version, which may not be perfect logically.
+        return _mm256_cmpgt_epi16(this->m256, _mm256_setzero_si256());
+#else
         BitVec16x16_AVX zeros;
         zeros.setAllZeros();
         return this->whichIsNotEqual(zeros);
+#endif
     }
 
     inline BitVec16x16_AVX whichIsMoreThanZero() const {
