@@ -1017,15 +1017,16 @@ private:
     static
     JSTD_FORCE_INLINE
     void extractSolution(const State & state, char * solution) {
-        IntVec256 box_minirows;
+        IntVec4x64 box_minirows;
         for (int box_idx = 0; box_idx < 9; box_idx++) {
             const Box & box = state.boxes[box_idx];
-            box.cells.saveAligned((void *)&box_minirows);
+            box.cells.saveAs4x64(box_minirows);
+            //box.cells.saveAligned((void *)&box_minirows);
             int box_base = tables.box_base_tbl[box_idx];
             assert(box_base == (tables.div3[box_idx] * 27 + tables.mod3[box_idx] * 3));
-            extractMiniRow(box_minirows.u64[0], box_base,      solution);
-            extractMiniRow(box_minirows.u64[1], box_base + 9,  solution);
-            extractMiniRow(box_minirows.u64[2], box_base + 18, solution);
+            extractMiniRow(box_minirows.u64_0, box_base,      solution);
+            extractMiniRow(box_minirows.u64_1, box_base + 9,  solution);
+            extractMiniRow(box_minirows.u64_2, box_base + 18, solution);
         }
     }
 

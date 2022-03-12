@@ -277,6 +277,18 @@ union alignas(32) IntVec256 {
     __m256i  m256;
 };
 
+struct IntVec2x64 {
+    uint64_t u64_0;
+    uint64_t u64_1;
+};
+
+struct IntVec4x64 {
+    uint64_t u64_0;
+    uint64_t u64_1;
+    uint64_t u64_2;
+    uint64_t u64_3;
+};
+
 #pragma pack(pop)
 
 // Postfix-named specifications for three-operand boolean functions to use with ternarylogic intrinsics.
@@ -328,15 +340,57 @@ uint32_t mm_cvtsi128_si32_high(__m128i m128)
 struct AVX {
 
 static inline
-uint32_t mm256_cvtsi256_si32_low(__m256i m256)
+uint32_t mm256_cvtsi256_si32_low(__m256i src)
 {
-    return (uint32_t)(_mm256_cvtsi256_si32(m256) & 0xFFFFUL);
+    return (uint32_t)(_mm256_cvtsi256_si32(src) & 0xFFFFUL);
 }
 
 static inline
-uint32_t mm256_cvtsi256_si32_high(__m256i m256)
+uint32_t mm256_cvtsi256_si32_high(__m256i src)
 {
-    return (uint32_t)(_mm256_cvtsi256_si32(m256) >> 16U);
+    return (uint32_t)(_mm256_cvtsi256_si32(src) >> 16U);
+}
+
+template <int index>
+static inline
+uint64_t mm256_extract_epi64(__m256i src)
+{
+    assert(index >= 0 && index < 4);
+#if defined(__AVX2__) && defined(__SSE4_1__)
+    if (index >= 0 && index < 2) {
+        __m128i m128 = _mm256_castsi256_si128(src);
+        return (uint64_t)_mm_extract_epi64(m128, index);
+    }
+    else {
+        __m128i m128 = _mm256_extracti128_si256(src, 1);
+        return (uint64_t)_mm_extract_epi64(m128, index - 2);
+    }    
+#elif defined(__AVX__) && defined(__SSE4_1__)
+    if (index >= 0 && index < 2) {
+        __m128i m128 = _mm256_extractf128_si256(src);
+        return (uint64_t)_mm_extract_epi64(m128, index);
+    }
+    else {
+        __m128i m128 = _mm256_extractf128_si256(src, 1);
+        return (uint64_t)_mm_extract_epi64(m128, index - 2);
+    } 
+#else
+    // __AVX__ && __SSE2__
+    if (index >= 0 && index < 2) {
+        __m128i m128 = _mm256_castsi256_si128(src);
+        if (index == 1)
+            m128 = _mm_srli_si128(m128, 8);
+        // SSE2
+        return (uint64_t)_mm_cvtsi128_si64(m128);
+    }
+    else {
+        __m128i m128 = _mm256_extractf128_si256(src, index / 2);
+        if (index == 3)
+            m128 = _mm_srli_si128(m128, 8);
+        // SSE2
+        return (uint64_t)_mm_cvtsi128_si64(m128);
+    }
+#endif
 }
 
 }; // AVX Wrapper
@@ -483,6 +537,17 @@ struct BitVec08x16 {
     static void copyUnaligned(const void * src_mem_addr, void * dest_mem_addr) {
         __m128i tmp = _mm_loadu_si128((const __m128i *)src_mem_addr);
         _mm_storeu_si128((__m128i *)dest_mem_addr, tmp);
+    }
+
+    inline void saveAs2x64(IntVec2x64 & intVec) const {
+#if defined(__SSE4_1__)
+        intVec.u64_0 = _mm_extract_epi64(this->m128, 0);
+        intVec.u64_1 = _mm_extract_epi64(this->m128, 1);
+#else
+        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->m128);
+        __m128i _low64 = _mm_srli_si128(this->m128, 8);
+        intVec.u64_1 = (uint64_t)_mm_cvtsi128_si64(_low64);
+#endif
     }
 
     inline bool operator == (const BitVec08x16 & other) const {
@@ -1582,6 +1647,22 @@ struct BitVec16x16_SSE {
 #endif
     }
 
+    inline void saveAs4x64(IntVec4x64 & intVec) const {
+#if defined(__SSE4_1__)
+        intVec.u64_0 = _mm_extract_epi64(this->low.m128, 0);
+        intVec.u64_1 = _mm_extract_epi64(this->low.m128, 1);
+        intVec.u64_2 = _mm_extract_epi64(this->high.m128, 0);
+        intVec.u64_3 = _mm_extract_epi64(this->high.m128, 1);
+#else
+        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->low);
+        __m128i _low64 = _mm_srli_si128(this->low, 8);
+        intVec.u64_1 = (uint64_t)_mm_cvtsi128_si64(_low64);
+        intVec.u64_2 = (uint64_t)_mm_cvtsi128_si64(this->high);
+        __m128i _high64 = _mm_srli_si128(this->high, 8);
+        intVec.u64_3 = (uint64_t)_mm_cvtsi128_si64(_high64);
+#endif
+    }
+
     inline bool operator == (const BitVec16x16_SSE & other) const {
         return this->isEqual(other);
     }
@@ -1793,16 +1874,16 @@ struct BitVec16x16_SSE {
         return (this->low.hasAnyLessThan(other.low) || this->high.hasAnyLessThan(other.high));
     }
 
-    // Is mixed by zeros and ones
-    inline bool hasIntersects_And_isNotSubsetOf(const BitVec16x16_SSE & other) const {
-        return (this->low.hasIntersects_And_isNotSubsetOf(other.low) ||
-                this->high.hasIntersects_And_isNotSubsetOf(other.high));
-    }
-
     // Is not all zeros and all ones
     inline bool noIntersects_Or_isSubsetOf(const BitVec16x16_SSE & other) const {
         return (this->low.noIntersects_Or_isSubsetOf(other.low) &&
                 this->high.noIntersects_Or_isSubsetOf(other.high));
+    }
+
+    // Is mixed by zeros and ones
+    inline bool hasIntersects_And_isNotSubsetOf(const BitVec16x16_SSE & other) const {
+        return (this->low.hasIntersects_And_isNotSubsetOf(other.low) &&
+                this->high.hasIntersects_And_isNotSubsetOf(other.high));
     }
 
     inline bool hasIntersects(const BitVec16x16_SSE & other) const {
@@ -2667,6 +2748,20 @@ struct BitVec16x16_AVX {
         _mm256_storeu_si256((__m256i *)dest_mem_addr, tmp);
     }
 
+    inline void saveAs4x64(IntVec4x64 & intVec) const {
+#ifdef _MSC_VER
+        intVec.u64_0 = AVX::mm256_extract_epi64<0>(this->m256);
+        intVec.u64_1 = AVX::mm256_extract_epi64<1>(this->m256);
+        intVec.u64_2 = AVX::mm256_extract_epi64<2>(this->m256);
+        intVec.u64_3 = AVX::mm256_extract_epi64<3>(this->m256);
+#else
+        intVec.u64_0 = _mm256_extract_epi64(this->m256, 0);
+        intVec.u64_1 = _mm256_extract_epi64(this->m256, 1);
+        intVec.u64_2 = _mm256_extract_epi64(this->m256, 2);
+        intVec.u64_3 = _mm256_extract_epi64(this->m256, 3);
+#endif
+    }
+
     inline bool operator == (const BitVec16x16_AVX & other) const {
         return this->isEqual(other);
     }
@@ -2931,14 +3026,14 @@ struct BitVec16x16_AVX {
 #endif
     }
 
-    // Is mixed by zeros and ones
-    inline bool hasIntersects_And_isNotSubsetOf(const BitVec16x16_AVX & other) const {
-        return (_mm256_test_mix_ones_zeros(this->m256, other.m256) == 1);
-    }
-
     // Is not all zeros and all ones
     inline bool noIntersects_Or_isSubsetOf(const BitVec16x16_AVX & other) const {
         return (_mm256_test_mix_ones_zeros(this->m256, other.m256) == 0);
+    }
+
+    // Is mixed by zeros and ones
+    inline bool hasIntersects_And_isNotSubsetOf(const BitVec16x16_AVX & other) const {
+        return (_mm256_test_mix_ones_zeros(this->m256, other.m256) == 1);
     }
 
     inline bool hasIntersects(const BitVec16x16_AVX & other) const {
