@@ -3930,7 +3930,11 @@ uint64_t whichIsNotDots64(const char * p) {
 }
 
 #if defined(__AVX2__) || defined(__AVX512VL__) || defined(__AVX512F__)
-typedef BitVec16x16_AVX     BitVec16x16;
+  #if defined(__clang__)
+    typedef BitVec16x16_SSE     BitVec16x16;
+  #else
+    typedef BitVec16x16_AVX     BitVec16x16;
+  #endif
 #else
 typedef BitVec16x16_SSE     BitVec16x16;
 #endif // __AVX2__
