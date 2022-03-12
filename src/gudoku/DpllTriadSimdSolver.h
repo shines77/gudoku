@@ -27,8 +27,6 @@
 #include "gudoku/BitArray.h"
 #include "gudoku/BitVec.h"
 
-#pragma pack(push, 1)
-
 namespace gudoku {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
@@ -39,6 +37,8 @@ static const uint64_t kAll64 = 0x01FF01FF01FF01FFULL;
 
 static const size_t kHorizontal = 0;
 static const size_t kVertical   = 1;
+
+#pragma pack(push, 1)
 
 union IntVec64 {
     struct {
@@ -64,6 +64,8 @@ union IntVec64 {
     int64_t  i64;
     uint64_t u64;
 };
+
+#pragma pack(pop)
 
 //  The state of each box is stored in a vector of 16 uint16_t,     +---+---+---+---+
 //  arranged as a 4x4 matrix of 9-bit candidate sets (the high      | c | c | c | H |
@@ -250,6 +252,8 @@ struct alignas(32) State {
     }
 };
 
+#pragma pack(push, 1)
+
 struct alignas(32) BoxIndexing {
     static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
     static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
@@ -285,6 +289,8 @@ struct alignas(32) BoxIndexing {
           cell((uint8_t)(cell_y * (BoxCellsX + 1) + cell_x)),
           reserve1((uint8_t)0), reserve2((uint8_t)0) {}
 };
+
+#pragma pack(pop)
 
 //
 // We depend on low-level shuffle operations that address packed 8-bit integers, but we're
@@ -1011,9 +1017,9 @@ private:
     static
     JSTD_FORCE_INLINE
     void extractSolution(const State & state, char * solution) {
+        IntVec256 box_minirows;
         for (int box_idx = 0; box_idx < 9; box_idx++) {
             const Box & box = state.boxes[box_idx];
-            IntVec256 box_minirows;
             box.cells.saveAligned((void *)&box_minirows);
             int32_t box_base = tables.box_base_tbl[box_idx];
             assert(box_base == (tables.div3[box_idx] * 27 + tables.mod3[box_idx] * 3));
@@ -1051,7 +1057,5 @@ public:
 };
 
 } // namespace gudoku
-
-#pragma pack(pop)
 
 #endif // GUDOKU_DPLL_TRIAD_SIMD_SOLVER_H
