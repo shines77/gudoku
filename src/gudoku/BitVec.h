@@ -849,7 +849,7 @@ struct BitVec08x16 {
     inline bool hasAnyLessThan(const BitVec08x16 & other) const {
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
         return (_mm_cmp_epi16_mask(this->m128, other.m128, _MM_CMPINT_LT) != 0);
-#elif 1
+#elif 0
         BitVec08x16 which_less_than = _mm_cmpgt_epi16(other.m128, this->m128);
         return which_less_than.isNotAllZeros();
 #else
@@ -2767,7 +2767,7 @@ struct BitVec16x16_AVX {
     }
 
     inline void saveAs4x64(IntVec4x64 & intVec) const {
-#if defined(_MSC_VER) || 1
+#if defined(_MSC_VER)
         intVec.u64_0 = AVX::mm256_extract_epi64<0>(this->m256);
         intVec.u64_1 = AVX::mm256_extract_epi64<1>(this->m256);
         intVec.u64_2 = AVX::mm256_extract_epi64<2>(this->m256);
@@ -3037,7 +3037,7 @@ struct BitVec16x16_AVX {
     inline bool hasAnyLessThan(const BitVec16x16_AVX & other) const {
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
         return (_mm256_cmp_epi16_mask(this->m256, other.m256, _MM_CMPINT_LT) != 0);
-#elif 1
+#elif 0
         BitVec16x16_AVX which_less_than = _mm256_cmpgt_epi16(other.m256, this->m256);
         return which_less_than.isNotAllZeros();
 #else
