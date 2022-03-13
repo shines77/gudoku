@@ -1026,11 +1026,11 @@ private:
 #if 1
         IntVec64 * pUInt64 = (IntVec64 *)&minirow;
         uint32_t mask0 = pUInt64->u16_0;
+        solution[minirow_base + 0] = tables.bitmask_to_digit[mask0];
         uint32_t mask1 = pUInt64->u16_1;
+        solution[minirow_base + 1] = tables.bitmask_to_digit[mask1];
         IntVec32 minirow_high(pUInt64->u32_1);
         uint32_t mask2 = minirow_high.u16_0;
-        solution[minirow_base + 0] = tables.bitmask_to_digit[mask0];
-        solution[minirow_base + 1] = tables.bitmask_to_digit[mask1];
         solution[minirow_base + 2] = tables.bitmask_to_digit[mask2];
 #else        
         solution[minirow_base + 0] = tables.bitmask_to_digit[uint16_t((minirow >> 0u ) & 0xFFFF)];
@@ -1039,6 +1039,23 @@ private:
 #endif        
     }
 
+#if 1
+    static
+    JSTD_FORCE_INLINE
+    void extractSolution(const State & state, char * solution) {
+        for (int box_idx = 0; box_idx < 9; box_idx++) {
+            const Box & box = state.boxes[box_idx];
+            int box_base = tables.box_base_tbl[box_idx];
+            assert(box_base == (tables.div3[box_idx] * 27 + tables.mod3[box_idx] * 3));
+            uint64_t minirow = box.cells.getAsU64<0>();
+            extractMiniRow(minirow, box_base,      solution);
+            minirow = box.cells.getAsU64<1>();
+            extractMiniRow(minirow, box_base + 9,  solution);
+            minirow = box.cells.getAsU64<2>();
+            extractMiniRow(minirow, box_base + 18, solution);
+        }
+    }
+#else
     static
     JSTD_FORCE_INLINE
     void extractSolution(const State & state, char * solution) {
@@ -1054,6 +1071,7 @@ private:
             extractMiniRow(box_minirows.u64_2, box_base + 18, solution);
         }
     }
+#endif
 
     inline
     void resetStatistics(size_t limit) {
