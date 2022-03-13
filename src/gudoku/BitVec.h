@@ -1690,13 +1690,7 @@ struct BitVec16x16_SSE {
     }
 
     inline void saveAs4x64(IntVec4x64 & intVec) const {
-#if 1
-        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->low.m128);
-        __m128i _low64 = _mm_srli_si128(this->low.m128, 8);
-        intVec.u64_1 = (uint64_t)_mm_cvtsi128_si64(_low64);
-        intVec.u64_2 = (uint64_t)_mm_cvtsi128_si64(this->high.m128);
-        //intVec.u64_3 = _mm_extract_epi64(this->high.m128, 1);
-#elif defined(__SSE4_1__)
+#if defined(__SSE4_1__)
         intVec.u64_0 = _mm_extract_epi64(this->low.m128, 0);
         intVec.u64_1 = _mm_extract_epi64(this->low.m128, 1);
         intVec.u64_2 = _mm_extract_epi64(this->high.m128, 0);
