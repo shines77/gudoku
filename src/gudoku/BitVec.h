@@ -351,29 +351,52 @@ uint32_t mm256_cvtsi256_si32_high(__m256i src)
     return (uint32_t)(_mm256_cvtsi256_si32(src) >> 16U);
 }
 
+//
+// See: /gcc/config/i386/avxintrin.h   (gcc 9.x)
+//
 template <int index>
 static inline
 uint64_t mm256_extract_epi64(__m256i src)
 {
     assert(index >= 0 && index < 4);
     static const int _index = index % 2;
-#if defined(__AVX2__) && defined(__SSE4_1__)
-    if (index >= 0 && index < 2) {
+#if 1
+    if (index == 0) {
         __m128i m128 = _mm256_castsi256_si128(src);
-        return (uint64_t)_mm_extract_epi64(m128, _index);
+        return (uint64_t)_mm_cvtsi128_si64(m128);
+    }
+    else if (index == 1) {
+        __m128i m128 = _mm256_castsi256_si128(src);
+        return (uint64_t)_mm_extract_epi64(m128, index % 2);
+    }
+    else if (index == 2) {
+        __m128i m128 = _mm256_extractf128_si256(src, index >> 1);
+        return (uint64_t)_mm_cvtsi128_si64(m128);
+    }
+    else if (index == 3) {
+        __m128i m128 = _mm256_extractf128_si256(src, index >> 1);
+        return (uint64_t)_mm_extract_epi64(m128, index % 2);
     }
     else {
-        __m128i m128 = _mm256_extracti128_si256(src, 1);
-        return (uint64_t)_mm_extract_epi64(m128, _index);
+        assert(false);
+    }
+#elif defined(__AVX2__) && defined(__SSE4_1__)
+    if (index >= 0 && index < 2) {
+        __m128i m128 = _mm256_castsi256_si128(src);
+        return (uint64_t)_mm_extract_epi64(m128, index % 2);
+    }
+    else {
+        __m128i m128 = _mm256_extracti128_si256(src, index >> 1);
+        return (uint64_t)_mm_extract_epi64(m128, index % 2);
     }
 #elif defined(__AVX__) && defined(__SSE4_1__)
     if (index >= 0 && index < 2) {
         __m128i m128 = _mm256_extractf128_si256(src);
-        return (uint64_t)_mm_extract_epi64(m128, _index);
+        return (uint64_t)_mm_extract_epi64(m128, index % 2);
     }
     else {
-        __m128i m128 = _mm256_extractf128_si256(src, 1);
-        return (uint64_t)_mm_extract_epi64(m128, _index);
+        __m128i m128 = _mm256_extractf128_si256(src, index >> 1);
+        return (uint64_t)_mm_extract_epi64(m128, index % 2);
     }
 #else
     // __AVX__ && __SSE2__
@@ -385,7 +408,7 @@ uint64_t mm256_extract_epi64(__m256i src)
         return (uint64_t)_mm_cvtsi128_si64(m128);
     }
     else {
-        __m128i m128 = _mm256_extractf128_si256(src, 1);
+        __m128i m128 = _mm256_extractf128_si256(src, index >> 1);
         if (index == 3)
             m128 = _mm_srli_si128(m128, 8);
         // SSE2

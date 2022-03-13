@@ -40,6 +40,23 @@ static const size_t kVertical   = 1;
 
 #pragma pack(push, 1)
 
+union IntVec32 {
+    struct {
+        int16_t i16_0;
+        int16_t i16_1;
+    };
+    struct {
+        uint16_t u16_0;
+        uint16_t u16_1;
+    };
+    int32_t  i32;
+    uint32_t u32;
+
+    IntVec32() noexcept {}
+    IntVec32(uint32_t val) noexcept : u32(val) {}
+    IntVec32(int32_t val) noexcept : i32(val) {}
+};
+
 union IntVec64 {
     struct {
         int16_t i16_0;
@@ -63,6 +80,10 @@ union IntVec64 {
     };
     int64_t  i64;
     uint64_t u64;
+
+    IntVec64() noexcept {}
+    IntVec64(uint64_t val) noexcept : i64(val) {}
+    IntVec64(int64_t val) noexcept : u64(val) {}
 };
 
 #pragma pack(pop)
@@ -1004,9 +1025,13 @@ private:
     void extractMiniRow(uint64_t minirow, int minirow_base, char * solution) {
 #if 1
         IntVec64 * pUInt64 = (IntVec64 *)&minirow;
-        solution[minirow_base + 0] = tables.bitmask_to_digit[pUInt64->u16_0];
-        solution[minirow_base + 1] = tables.bitmask_to_digit[pUInt64->u16_1];
-        solution[minirow_base + 2] = tables.bitmask_to_digit[pUInt64->u16_2];
+        uint32_t mask0 = pUInt64->u16_0;
+        uint32_t mask1 = pUInt64->u16_1;
+        IntVec32 minirow_high(pUInt64->u32_1);
+        uint32_t mask2 = minirow_high.u16_0;
+        solution[minirow_base + 0] = tables.bitmask_to_digit[mask0];
+        solution[minirow_base + 1] = tables.bitmask_to_digit[mask1];
+        solution[minirow_base + 2] = tables.bitmask_to_digit[mask2];
 #else        
         solution[minirow_base + 0] = tables.bitmask_to_digit[uint16_t((minirow >> 0u ) & 0xFFFF)];
         solution[minirow_base + 1] = tables.bitmask_to_digit[uint16_t((minirow >> 16u) & 0xFFFF)];
