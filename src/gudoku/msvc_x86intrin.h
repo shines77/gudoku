@@ -84,7 +84,10 @@
 #if defined(__AVX__) || defined(__AVX2__)
 /* For including AVX instructions */
 #include <immintrin.h>
+#if defined(__GNUC__)
+#include <avxintrin.h>
 #endif
+#endif // __AVX__ || __AVX2__
 
 #ifdef __3dNOW__
 #if defined(_M_IX86)

@@ -218,11 +218,6 @@
         _mm_cvtsi128_si32(_mm256_castsi256_si128(val))
 #endif // _mm256_cvtsi256_si32
 
-#ifndef _mm256_insert_epi16
-#define _mm256_insert_epi16(target, value, index) \
-        AVX2::template mm256_insert_epi16<index>(target, value)
-#endif // _mm256_insert_epi16
-
 /////////////////////////////////////////////
 
 //
@@ -339,6 +334,8 @@ uint32_t mm_cvtsi128_si32_high(__m128i m128)
 
 struct AVX {
 
+#if defined(__AVX__)
+
 static inline
 uint32_t mm256_cvtsi256_si32_low(__m256i src)
 {
@@ -349,6 +346,87 @@ static inline
 uint32_t mm256_cvtsi256_si32_high(__m256i src)
 {
     return (uint32_t)(_mm256_cvtsi256_si32(src) >> 16U);
+}
+
+template <int index>
+static inline
+int mm256_extract_epi16(__m256i src)
+{
+    __m128i partOfExtract = _mm256_extractf128_si256 (src, index >> 3);
+    int result = _mm_extract_epi16 (partOfExtract, index % 8);
+    return result;
+}
+
+//
+// See: https://agner.org/optimize/
+//
+// See: https://stackoverflow.com/questions/54048226/move-an-int64-t-to-the-high-quadwords-of-an-avx2-m256i-vector
+// See: https://stackoverflow.com/questions/58303958/how-to-implement-16-and-32-bit-integer-insert-and-extract-operations-with-avx-51
+//
+template <int index>
+static inline
+__m256i mm256_insert_epi16(__m256i target, int value)
+{
+    __m256i result;
+    switch (index) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        {
+            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, (index < 8) ? index : 0);
+            result = _mm256_castsi128_si256(result128);
+            break;
+        }
+
+        case 8:
+        {
+#if 1
+            __m128i high128 = _mm256_extracti128_si256(target, 1);
+            __m128i value128 = _mm_cvtsi32_si128(value);
+            __m128i mixed128 = _mm_blend_epi16(high128, value128, 0x00000001);
+            result = _mm256_inserti128_si256(target, mixed128, 1);
+#else
+            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, 0);
+            __m256i result256 = _mm256_inserti128_si256(_mm256_castsi128_si256(result128), result128, 1);
+            result = _mm256_blend_epi16(target, result256, 0b00000001);
+#endif
+            break;
+        }
+
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        {
+            __m128i high128 = _mm256_extracti128_si256(target, 1);
+            __m128i mixed128 = _mm_insert_epi16(high128, value, (index >= 8) ? (index - 8) : 0);
+            result = _mm256_inserti128_si256(target, mixed128, 1);
+            break;
+        }
+
+        default:
+            static_assert((index < 16), "AVX::_mm256_insert_epi16(target, value, index), index is out of range [0, 15].");
+            break;
+    }
+    return result;
+}
+
+template <int index>
+static inline
+__m256i mm256_insert_epi16_glib(__m256i target, int value)
+{
+    __m128i partOfInsert = _mm256_extractf128_si256 (target, index >> 3);
+    partOfInsert = _mm_insert_epi16 (partOfInsert, value, index % 8);
+    __m256i result = _mm256_insertf128_si256 (target, partOfInsert, index >> 3);
+    return result;
 }
 
 //
@@ -418,71 +496,47 @@ int64_t mm256_extract_epi64(__m256i src)
 #endif
 }
 
+template <int index>
+static inline
+__m256i mm256_insert_epi64(__m256i target, int64_t value)
+{
+    __m128i partOfInsert = _mm256_extractf128_si256(target, index >> 1);
+    partOfInsert = _mm_insert_epi64(partOfInsert, value, index % 2);
+    __m256i result = _mm256_insertf128_si256 (target, partOfInsert, index >> 1);
+    return result;
+}
+
+#if defined(_MSC_VER)
+
+//
+// Missing in MSVC (before 2017)
+//
+
+#ifndef _mm256_extract_epi16
+#define _mm256_extract_epi16(src, index)             AVX::template mm256_extract_epi16<index>(src)
+#endif
+
+#ifndef _mm256_insert_epi16
+#define _mm256_insert_epi16(target, value, index)   AVX::template mm256_insert_epi16<index>(target, value)
+#endif
+
+#ifndef _mm256_extract_epi64
+#define _mm256_extract_epi64(src, index)            AVX::template mm256_extract_epi64<index>(src)
+#endif
+
+#ifndef _mm256_insert_epi64
+#define _mm256_insert_epi64(target, value, index)   AVX::template mm256_insert_epi64<index>(target, value)
+#endif
+
+#endif // _MSC_VER
+
+#endif // __AVX__
+
 }; // AVX Wrapper
 
 struct AVX2 {
 
-//
-// See: https://agner.org/optimize/
-//
-// See: https://stackoverflow.com/questions/54048226/move-an-int64-t-to-the-high-quadwords-of-an-avx2-m256i-vector
-// See: https://stackoverflow.com/questions/58303958/how-to-implement-16-and-32-bit-integer-insert-and-extract-operations-with-avx-51
-//
-template <int index>
-static inline
-__m256i mm256_insert_epi16(__m256i target, int value)
-{
-    __m256i result;
-    switch (index) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-        {
-            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, (index < 8) ? index : 0);
-            result = _mm256_castsi128_si256(result128);
-            break;
-        }
-
-        case 8:
-        {
-#if 1
-            __m128i high128 = _mm256_extracti128_si256(target, 1);
-            __m128i value128 = _mm_cvtsi32_si128(value);
-            __m128i mixed128 = _mm_blend_epi16(high128, value128, 0x00000001);
-            result = _mm256_inserti128_si256(target, mixed128, 1);
-#else
-            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, 0);
-            __m256i result256 = _mm256_inserti128_si256(_mm256_castsi128_si256(result128), result128, 1);
-            result = _mm256_blend_epi16(target, result256, 0b00000001);
-#endif
-            break;
-        }
-
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-        {
-            __m128i high128 = _mm256_extracti128_si256(target, 1);
-            __m128i mixed128 = _mm_insert_epi16(high128, value, (index >= 8) ? (index - 8) : 0);
-            result = _mm256_inserti128_si256(target, mixed128, 1);
-            break;
-        }
-
-        default:
-            static_assert((index < 16), "AVX2::_mm256_insert_epi16(target, value, index), index is out of range [0, 15].");
-            break;
-    }
-    return result;
-}
+// TODO:
 
 }; // AVX2 Wrapper
 
@@ -606,17 +660,17 @@ struct BitVec08x16 {
 
     // Logical operation
     inline BitVec08x16 & operator &= (const BitVec08x16 & rhs) {
-        this->self_and(rhs);
+        this->and_equal(rhs);
         return *this;
     }
 
     inline BitVec08x16 & operator |= (const BitVec08x16 & rhs) {
-        this->self_or(rhs);
+        this->or_equal(rhs);
         return *this;
     }
 
     inline BitVec08x16 & operator ^= (const BitVec08x16 & rhs) {
-        this->self_xor(rhs);
+        this->xor_equal(rhs);
         return *this;
     }
 
@@ -645,22 +699,22 @@ struct BitVec08x16 {
     }
 
     // Logical operation
-    inline BitVec08x16 & self_and(const BitVec08x16 & other) {
+    inline BitVec08x16 & and_equal(const BitVec08x16 & other) {
         this->m128 = _mm_and_si128(this->m128, other.m128);
         return *this;
     }
 
-    inline BitVec08x16 & self_and_not(const BitVec08x16 & other) {
+    inline BitVec08x16 & andnot_equal(const BitVec08x16 & other) {
         this->m128 = _mm_andnot_si128(other.m128, this->m128);
         return *this;
     }
 
-    inline BitVec08x16 & self_or(const BitVec08x16 & other) {
+    inline BitVec08x16 & or_equal(const BitVec08x16 & other) {
         this->m128 = _mm_or_si128(this->m128, other.m128);
         return *this;
     }
 
-    inline BitVec08x16 & self_xor(const BitVec08x16 & other) {
+    inline BitVec08x16 & xor_equal(const BitVec08x16 & other) {
         this->m128 = _mm_xor_si128(this->m128, other.m128);
         return *this;
     }
@@ -683,28 +737,28 @@ struct BitVec08x16 {
     }
 
     // Logical operation
-    inline BitVec08x16 & self_and(__m128i value) {
+    inline BitVec08x16 & and_equal(__m128i value) {
         this->m128 = _mm_and_si128(this->m128, value);
         return *this;
     }
 
-    inline BitVec08x16 & self_and_not(__m128i value) {
+    inline BitVec08x16 & andnot_equal(__m128i value) {
         this->m128 = _mm_andnot_si128(value, this->m128);
         return *this;
     }
 
-    inline BitVec08x16 & self_or(__m128i value) {
+    inline BitVec08x16 & or_equal(__m128i value) {
         this->m128 = _mm_or_si128(this->m128, value);
         return *this;
     }
 
-    inline BitVec08x16 & self_xor(__m128i value) {
+    inline BitVec08x16 & xor_equal(__m128i value) {
         this->m128 = _mm_xor_si128(this->m128, value);
         return *this;
     }
 
     // Logical not: !
-    inline BitVec08x16 & self_not() {
+    inline BitVec08x16 & not_equal() {
         BitVec08x16 ones;
         ones.setAllOnes();
         this->m128 = _mm_andnot_si128(this->m128, ones.m128);
@@ -1121,6 +1175,7 @@ struct BitVec08x16 {
         return compare_mask_16;
     }
 
+    // BitVec08x16
     inline uint16_t extract(int index) const {
         #define CASE(x) case x: return (uint16_t)_mm_extract_epi16(this->m128, x);
         switch (index) {
@@ -1139,6 +1194,7 @@ struct BitVec08x16 {
         #undef CASE
     }
 
+    // BitVec08x16
     inline void insert(int index, uint16_t value) {
         #define CASE(x) case x: this->m128 = _mm_insert_epi16(this->m128, value, x); break;
         switch (index) {
@@ -1155,6 +1211,99 @@ struct BitVec08x16 {
                 break;
         }
         #undef CASE
+    }
+
+    // BitVec08x16
+    inline uint64_t extractU64(int index) const {
+#if defined(__SSE4_1__)
+        if (index == 0)
+            return (uint64_t)_mm_extract_epi64(this->m128, 0);
+        else if (index == 1)
+            return (uint64_t)_mm_extract_epi64(this->m128, 1);
+        else
+            assert(false);
+#else
+        if (index == 0) {
+            return (uint64_t)_mm_cvtsi128_si64(this->low.m128);
+        }
+        else if (index == 1) {
+            __m128i low64 = _mm_srli_si128(this->low.m128, 8);
+            return (uint64_t)_mm_cvtsi128_si64(low64);
+        }
+        else if (index == 2) {
+            return (uint64_t)_mm_cvtsi128_si64(this->high.m128);
+        }
+        else if (index == 3) {
+            __m128i high64 = _mm_srli_si128(this->high.m128, 8);
+            return (uint64_t)_mm_cvtsi128_si64(high64);
+        }
+        else {
+            assert(false);
+        }
+#endif
+        return 0;
+    }
+
+    // BitVec08x16
+    inline void insertU64(int index, uint64_t value) {
+#if defined(__SSE4_1__)
+        if (index == 0)
+            _mm_insert_epi64(this->m128, value, 0);
+        else if (index == 1)
+            _mm_insert_epi64(this->m128, value, 1);
+        else
+            assert(false);
+#elif defined(__SSSE3__)
+        // SSE2, SSSE3
+        __m128i val;
+        if (index == 0) {
+            // The low 64 bit
+            val = _mm_cvtsi64_si128(value);
+            // Copy high 64 bit to low 64 bit
+            this->m128 = _mm_shuffle_epi32(this->m128, _MM_SHUFFLE(2, 3, 2, 3));
+            // Copy low 64 bit to high 64 bit
+            val = _mm_shuffle_epi32(val, _MM_SHUFFLE(0, 1, 0, 1));
+            // = ((a << 128) or b) >> (imm * 8)
+            this->m128 = _mm_alignr_epi8(this->m128, val, 8);
+        }
+        else if (index == 1) {
+            // The low 64 bit
+            val = _mm_cvtsi64_si128(value);
+            // Copy low 64 bit to high 64 bit
+            this->m128 = _mm_shuffle_epi32(this->m128, _MM_SHUFFLE(0, 1, 0, 1));
+            // = ((a << 128) or b) >> (imm * 8)
+            this->m128 = _mm_alignr_epi8(val, this->m128, 8);
+        }
+        else {
+            assert(false);
+        }
+#else
+        // SSE2
+        __m128i val;
+        if (index == 0) {
+            // The low 64 bit
+            val = _mm_cvtsi64_si128(value);
+            // Remove the low 64 bit
+            this->m128 = _mm_srli_si128(this->m128, 8);
+            this->m128 = _mm_slli_si128(this->m128, 8);
+            // The high 64 bit Or value
+            this->m128 = _mm_or_si128(this->m128, val);
+        }
+        else if (index == 1) {
+            // The low 64 bit
+            val = _mm_cvtsi64_si128(value);
+            // Remove the high 64 bit
+            this->m128 = _mm_slli_si128(this->m128, 8);
+            this->m128 = _mm_srli_si128(this->m128, 8);
+            // Left shift 64 bit
+            val = _mm_slli_si128(val, 8);
+            // The value Or the low 64 bit
+            this->m128 = _mm_or_si128(val, this->m128);
+        }
+        else {
+            assert(false);
+        }
+#endif
     }
 
     template <uint16_t min_val>
@@ -1783,17 +1932,17 @@ struct BitVec16x16_SSE {
 
     // Logical operation
     inline BitVec16x16_SSE & operator &= (const BitVec16x16_SSE & rhs) {
-        this->self_and(rhs);
+        this->and_equal(rhs);
         return *this;
     }
 
     inline BitVec16x16_SSE & operator |= (const BitVec16x16_SSE & rhs) {
-        this->self_or(rhs);
+        this->or_equal(rhs);
         return *this;
     }
 
     inline BitVec16x16_SSE & operator ^= (const BitVec16x16_SSE & rhs) {
-        this->self_xor(rhs);
+        this->xor_equal(rhs);
         return *this;
     }
 
@@ -1820,34 +1969,34 @@ struct BitVec16x16_SSE {
     }
 
     // Logical operation
-    inline BitVec16x16_SSE & self_and(const BitVec16x16_SSE & other) {
-        this->low.self_and(other.low);
-        this->high.self_and(other.high);
+    inline BitVec16x16_SSE & and_equal(const BitVec16x16_SSE & other) {
+        this->low.and_equal(other.low);
+        this->high.and_equal(other.high);
         return *this;
     }
 
-    inline BitVec16x16_SSE & self_and_not(const BitVec16x16_SSE & other) {
-        this->low.self_and_not(other.low);
-        this->high.self_and_not(other.high);
+    inline BitVec16x16_SSE & andnot_equal(const BitVec16x16_SSE & other) {
+        this->low.andnot_equal(other.low);
+        this->high.andnot_equal(other.high);
         return *this;
     }
 
-    inline BitVec16x16_SSE & self_or(const BitVec16x16_SSE & other) {
-        this->low.self_or(other.low);
-        this->high.self_or(other.high);
+    inline BitVec16x16_SSE & or_equal(const BitVec16x16_SSE & other) {
+        this->low.or_equal(other.low);
+        this->high.or_equal(other.high);
         return *this;
     }
 
-    inline BitVec16x16_SSE & self_xor(const BitVec16x16_SSE & other) {
-        this->low.self_xor(other.low);
-        this->high.self_xor(other.high);
+    inline BitVec16x16_SSE & xor_equal(const BitVec16x16_SSE & other) {
+        this->low.xor_equal(other.low);
+        this->high.xor_equal(other.high);
         return *this;
     }
 
     // Logical not: !
-    inline BitVec16x16_SSE & self_not() {
-        this->low.self_not();
-        this->high.self_not();
+    inline BitVec16x16_SSE & not_equal() {
+        this->low.not_equal();
+        this->high.not_equal();
         return *this;
     }
 
@@ -2202,6 +2351,7 @@ struct BitVec16x16_SSE {
         return compare_mask_32;
     }
 
+    // BitVec16x16_SSE
     inline uint16_t extract(int index) const {
         #define CASE_LOW(x)  case x: return (uint16_t)_mm_extract_epi16(this->low.m128, x);
         #define CASE_HIGH(x) case x: return (uint16_t)_mm_extract_epi16(this->high.m128, (x - 8));
@@ -2229,6 +2379,7 @@ struct BitVec16x16_SSE {
         #undef CASE_HIGH
     }
 
+    // BitVec16x16_SSE
     inline void insert(int index, uint16_t value) {
         #define CASE_LOW(x)  case x: this->low.m128  = _mm_insert_epi16(this->low.m128, value, x); break;
         #define CASE_HIGH(x) case x: this->high.m128 = _mm_insert_epi16(this->high.m128, value, (x - 8)); break;
@@ -2254,6 +2405,35 @@ struct BitVec16x16_SSE {
         }
         #undef CASE_LOW
         #undef CASE_HIGH
+    }
+
+    // BitVec16x16_SSE
+    inline uint64_t extractU64(int index) const {
+        if (index == 0)
+            return this->low.extractU64(0);
+        else if (index == 1)
+            return this->low.extractU64(1);
+        else if (index == 2)
+            return this->high.extractU64(0);
+        else if (index == 3)
+            return this->high.extractU64(1);
+        else
+            assert(false);
+        return 0;
+    }
+
+    // BitVec16x16_SSE
+    inline void insertU64(int index, uint64_t value) {
+        if (index == 0)
+            this->low.insertU64(0, value);
+        else if (index == 1)
+            this->low.insertU64(1, value);
+        else if (index == 2)
+            this->high.insertU64(0, value);
+        else if (index == 3)
+            this->high.insertU64(1, value);
+        else
+            assert(false);
     }
 
     inline BitVec16x16_SSE shuffle(const BitVec16x16_SSE & control) const {
@@ -2899,17 +3079,17 @@ struct BitVec16x16_AVX {
 
     // Logical operation
     inline BitVec16x16_AVX & operator &= (const BitVec16x16_AVX & rhs) {
-        this->self_and(rhs);
+        this->and_equal(rhs);
         return *this;
     }
 
     inline BitVec16x16_AVX & operator |= (const BitVec16x16_AVX & rhs) {
-        this->self_or(rhs);
+        this->or_equal(rhs);
         return *this;
     }
 
     inline BitVec16x16_AVX & operator ^= (const BitVec16x16_AVX & rhs) {
-        this->self_xor(rhs);
+        this->xor_equal(rhs);
         return *this;
     }
 
@@ -2938,28 +3118,28 @@ struct BitVec16x16_AVX {
     }
 
     // Logical operation
-    inline BitVec16x16_AVX & self_and(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & and_equal(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_and_si256(this->m256, vec.m256);
         return *this;
     }
 
-    inline BitVec16x16_AVX & self_and_not(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & andnot_equal(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_andnot_si256(vec.m256, this->m256);
         return *this;
     }
 
-    inline BitVec16x16_AVX & self_or(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & or_equal(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_or_si256(this->m256, vec.m256);
         return *this;
     }
 
-    inline BitVec16x16_AVX & self_xor(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & xor_equal(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_xor_si256(this->m256, vec.m256);
         return *this;
     }
 
     // Logical not: !
-    inline BitVec16x16_AVX & self_not() {
+    inline BitVec16x16_AVX & not_equal() {
         BitVec16x16_AVX ones;
         ones.setAllOnes();
         this->m256 = _mm256_andnot_si256(this->m256, ones.m256);
@@ -3306,6 +3486,7 @@ struct BitVec16x16_AVX {
 #endif
     }
 
+    // BitVec16x16_AVX
     inline uint16_t extract(int index) const {
 #if !defined(_mm256_extract_epi16)
         #define CASE_LOW(x) case x: \
@@ -3365,6 +3546,7 @@ struct BitVec16x16_AVX {
 #endif // !_mm256_extract_epi16
     }
 
+    // BitVec16x16_AVX
     inline void insert(int index, uint16_t value) {
 #if !defined(_mm256_insert_epi16)
         #define CASE_LOW(x) case x: \
@@ -3425,6 +3607,35 @@ struct BitVec16x16_AVX {
         }
         #undef CASE
 #endif // !_mm256_insert_epi16
+    }
+
+    // BitVec16x16_AVX
+    inline uint64_t extractU64(int index) const {
+        if (index == 0)
+            return (uint64_t)_mm256_extract_epi64(this->m256, 0);
+        else if (index == 1)
+            return (uint64_t)_mm256_extract_epi64(this->m256, 1);
+        else if (index == 2)
+            return (uint64_t)_mm256_extract_epi64(this->m256, 2);
+        else if (index == 3)
+            return (uint64_t)_mm256_extract_epi64(this->m256, 3);
+        else
+            assert(false);
+        return 0;
+    }
+
+    // BitVec16x16_AVX
+    inline void insertU64(int index, uint64_t value) {
+        if (index == 0)
+            _mm256_insert_epi64(this->m256, value, 0);
+        else if (index == 1)
+            _mm256_insert_epi64(this->m256, value, 1);
+        else if (index == 2)
+            _mm256_insert_epi64(this->m256, value, 2);
+        else if (index == 3)
+            _mm256_insert_epi64(this->m256, value, 3);
+        else
+            assert(false);
     }
 
     inline BitVec16x16_AVX shuffle(const BitVec16x16_AVX & control) const {
