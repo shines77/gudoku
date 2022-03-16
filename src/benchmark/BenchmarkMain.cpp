@@ -58,7 +58,6 @@
 #include "gudoku/DpllTriadSimdSolver.h"
 
 #include "gudoku/TestCase.h"
-#include "gudoku/Sudoku.hpp"
 
 using namespace gudoku;
 
@@ -322,8 +321,6 @@ int main(int argc, char * argv[])
         filename = argv[1];
     }
 
-    Sudoku::initialize();
-
     if (1)
     {
         if (filename == nullptr) {
@@ -340,8 +337,6 @@ int main(int argc, char * argv[])
                 run_all_benchmark<2>(filename);
         }
     }
-
-    Sudoku::finalize();
 
 #if defined(_DEBUG) && defined(_MSC_VER)
     ::system("pause");

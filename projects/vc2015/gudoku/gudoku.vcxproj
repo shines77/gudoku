@@ -37,7 +37,8 @@
     <ClInclude Include="..\..\..\src\gudoku\stddef.h" />
     <ClInclude Include="..\..\..\src\gudoku\StopWatch.h" />
     <ClInclude Include="..\..\..\src\gudoku\Sudoku.h" />
-    <ClInclude Include="..\..\..\src\gudoku\Sudoku.hpp" />
+    <ClInclude Include="..\..\..\src\gudoku\SudokuTable.hpp" />
+    <ClInclude Include="..\..\..\src\gudoku\SudokuTable.h" />
     <ClInclude Include="..\..\..\src\gudoku\TestCase.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

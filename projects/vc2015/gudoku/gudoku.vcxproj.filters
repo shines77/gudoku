@@ -48,9 +48,6 @@
     <ClInclude Include="..\..\..\src\gudoku\Sudoku.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\gudoku\Sudoku.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\gudoku\BitSet.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -61,6 +58,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gudoku\TestCase.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gudoku\SudokuTable.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gudoku\SudokuTable.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
