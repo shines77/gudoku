@@ -471,6 +471,15 @@ struct ALIGN_AS(32) Tables {
         BitVec08x16::full16(1u << 9u)
     };
 
+#if 0
+    const BitVec08x16 digit_bitmask_tbl[10] = {
+        BitVec08x16::full16(0), BitVec08x16::full16(1), BitVec08x16::full16(2),
+        BitVec08x16::full16(4), BitVec08x16::full16(8), BitVec08x16::full16(16),
+        BitVec08x16::full16(32), BitVec08x16::full16(64), BitVec08x16::full16(128),
+        BitVec08x16::full16(256)
+    };
+#endif
+
     const uint16_t digit_to_bitmask[128] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 00
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 10
@@ -991,15 +1000,18 @@ private:
         state.boxes[indexing.box].cells = state.boxes[indexing.box].cells.and_not(
                 tables.cell_assignment_eliminations[digit - '1'][indexing.cell]);
 
+        const BitVec08x16 & digit_bitmask = tables.one_value_mask[digit - '1'];
         // Merge band eliminations; we'll propagate after all clue are processed.
         state.bands[0][indexing.box_y].eliminations = BitVec08x16::X_and_Y_or_Z(
                 tables.peer_x_elem_to_config_mask[indexing.box_x][indexing.cell_y],
-                BitVec08x16::full16(candidate),
+                //BitVec08x16::full16(candidate),
+                digit_bitmask,
                 state.bands[0][indexing.box_y].eliminations);
 
         state.bands[1][indexing.box_x].eliminations = BitVec08x16::X_and_Y_or_Z(
                 tables.peer_x_elem_to_config_mask[indexing.box_y][indexing.cell_x],
-                BitVec08x16::full16(candidate),
+                //BitVec08x16::full16(candidate),
+                digit_bitmask,
                 state.bands[1][indexing.box_x].eliminations);
     }
 
@@ -1009,19 +1021,18 @@ private:
 #if USE_ALIGN_AS
         state.init();
 #endif
-
         uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
         while (nonDotMask64 != 0) {
             uint32_t pos = BitUtils::bsf64(nonDotMask64);
-            nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
             initClue(puzzle, state, pos);
+            nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
         }       
 
         uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
             initClue(puzzle, state, pos + 64);
+            nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
         }
 
         if (puzzle[80] != '.') {
