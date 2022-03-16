@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-size_t gudoku_solver(const char * sudoku, char * solution,
+size_t gudoku_solver(const char * sudoku, char * solution, uint32_t configuration,
                      size_t limit, size_t * num_guesses);
 
 #ifdef __cplusplus

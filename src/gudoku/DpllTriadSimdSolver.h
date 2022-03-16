@@ -590,6 +590,7 @@ struct ALIGN_AS(32) Tables {
 
 const Tables tables {};
 
+template <int kSolutionMode>
 class ALIGN_AS(32) DpllTriadSimdSolver : public BasicSolver {
 public:
     typedef BasicSolver                 basic_solver;
@@ -963,7 +964,7 @@ private:
         auto band_and_value = chooseBandAndValueToBranch(state);
         if (band_and_value.first == NONE) {
             this->num_solutions_++;
-            if (this->num_solutions_ == this->limit_solutions_) {
+            if (kSolutionMode == 1 && this->num_solutions_ == this->limit_solutions_) {
                 this->result_state_.copy_boxes(state);
             }
         } else {
@@ -1122,7 +1123,7 @@ public:
         bool success = this->initSudoku(puzzle, state);
         if (success) {
             countSolutionsConsistentWithPartialAssignment(state);
-            extractSolution(this->result_state_, solution);
+            if (kSolutionMode == 1) extractSolution(this->result_state_, solution);
         }
         return this->num_solutions_;
     }
