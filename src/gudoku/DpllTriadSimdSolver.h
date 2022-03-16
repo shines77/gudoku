@@ -1025,15 +1025,15 @@ private:
         uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
         while (nonDotMask64 != 0) {
             uint32_t pos = BitUtils::bsf64(nonDotMask64);
-            initClue(puzzle, state, pos);
             nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
+            initClue(puzzle, state, pos);
         }       
 
         uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            initClue(puzzle, state, pos + 64);
             nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
+            initClue(puzzle, state, pos + 64);
         }
 
         if (puzzle[80] != '.') {
