@@ -19,8 +19,6 @@
 
 #include "gudoku/DpllTriadSimdSolver.h"
 
-#include "gudoku/Sudoku.hpp"
-
 using namespace gudoku;
 
 namespace gudoku {
