@@ -1598,8 +1598,12 @@ struct BitVec16x16_SSE {
         _low = this->low;
     }
 
-    inline void castTo(BitVec16x16_SSE & vec) const {
-        vec = *this;
+    inline void castTo(BitVec16x16_SSE & ssex2) const {
+        ssex2 = *this;
+    }
+
+    inline void castTo(__m256i & avx) const {
+        avx = _mm256_setr_m128i(this->low.m128, this->high.m128);
     }
 
     inline void mergeTo(__m256i & m256) const {
@@ -2770,6 +2774,10 @@ struct BitVec16x16_AVX {
         low  = _mm256_castsi256_si128(this->m256);
     }
 
+    inline void castTo(BitVec16x16_AVX & avx) const {
+        avx = this->m256;
+    }
+
     inline void mergeTo(__m256i & m256) const {
         m256 = this->m256;
     }
@@ -3242,6 +3250,12 @@ struct BitVec16x16_AVX {
     inline int indexOfIsEqual16(uint32_t num) const {
         BitVec16x16_AVX is_equal_mask = this->whichIsEqual16(num);
         return this->template firstIndexOfOnes16<isNonZeros>(is_equal_mask);
+    }
+
+    template <bool isNonZeros, bool isRepeat = true>
+    inline int indexOfIsEqual16(const BitVec08x16 & in_num_mask) const {
+        BitVec16x16_AVX num_mask = _mm256_castsi128_si256(in_num_mask.m128);
+        return this->template indexOfIsEqual16<isNonZeros, isRepeat>(num_mask);
     }
 
     template <bool isNonZeros, bool isRepeat = true>
