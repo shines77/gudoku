@@ -344,7 +344,6 @@ int main(int argc, char * argv[])
     if (1)
     {
         if (filename != nullptr) {
-            run_all_benchmark(filename);
             if (limit_solution <= 0 || limit_solution == 1)
                 run_all_benchmark<1>(filename);
             else
