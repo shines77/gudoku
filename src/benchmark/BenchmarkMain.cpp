@@ -209,17 +209,17 @@ void run_a_testcase(size_t index)
         printf("------------------------------------------\n\n");
         printf("gudoku: DpllTriadSimdSolver\n\n");
 
-        run_solver_testcase<DpllTriadSimdSolver>(index);
+        run_solver_testcase<DpllTriadSimdSolver<1>>(index);
     }
 
     printf("------------------------------------------\n\n");
 }
 
 template <typename Solver>
-void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
+void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name, size_t limit)
 {
     //printf("------------------------------------------\n\n");
-    printf("gudoku: %s::Solver\n\n", name);
+    printf("gudoku: %s\n\n", name);
 
     size_t total_guesses = 0;
     size_t total_no_guess = 0;
@@ -240,7 +240,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
 
     for (size_t i = 0; i < puzzleTotal; i++) {
         Board & board = puzzles[i];
-        size_t solutions = solver.solve(&board.cells[0], &solution.cells[0], 1);
+        size_t solutions = solver.solve(&board.cells[0], &solution.cells[0], limit);
         if (solutions == 1) {
             size_t num_guesses = solver.get_num_guesses();
             total_guesses += num_guesses;
@@ -286,17 +286,20 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     printf("------------------------------------------\n\n");
 }
 
+template <int LimitSolutions = 1>
 void run_all_benchmark(const char * filename)
 {
     // Read the puzzles data
     bm_puzzleTotal = load_sudoku_puzzles(filename, bm_puzzles);
 
     test::CPU::WarmUp cpuWarmUp(1000);
+    
+    static const int kSolutionMode = (LimitSolutions == 1) ? 1: 0;
 
 #if !defined(_DEBUG)
-    run_sudoku_test<DpllTriadSimdSolver>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver");
+    run_sudoku_test<DpllTriadSimdSolver<kSolutionMode>>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver", LimitSolutions);
 #else
-    run_sudoku_test<DpllTriadSimdSolver>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver");
+    run_sudoku_test<DpllTriadSimdSolver<kSolutionMode>>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver", LimitSolutions);
 #endif
 }
 
@@ -304,10 +307,16 @@ int main(int argc, char * argv[])
 {
     const char * filename = nullptr;
     const char * out_file = nullptr;
+    int limit_solution = 0;
     UNUSED_VARIANT(out_file);
-    if (argc > 2) {
+    if (argc > 3) {
         filename = argv[1];
-        out_file = argv[2];
+        limit_solution = atoi(argv[2]);
+        out_file = argv[3];
+    }
+    else if (argc > 2) {
+        filename = argv[1];
+        limit_solution = atoi(argv[2]);
     }
     else if (argc > 1) {
         filename = argv[1];
@@ -326,6 +335,10 @@ int main(int argc, char * argv[])
     {
         if (filename != nullptr) {
             run_all_benchmark(filename);
+            if (limit_solution <= 0 || limit_solution == 1)
+                run_all_benchmark<1>(filename);
+            else
+                run_all_benchmark<2>(filename);
         }
     }
 
