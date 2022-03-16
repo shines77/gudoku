@@ -992,15 +992,16 @@ private:
         assert(digit >= '1' && digit <= '9');
         uint16_t candidate = tables.digit_to_bitmask[digit];
         assert(candidate == (uint16_t)(1U << (uint32_t)(digit - '1')));
+        digit = digit - '1';
         //
         // Perform eliminations for the clue in its own box, but don't propagate. this is
         // not strictly necessary since band eliminations will constrain the puzzle, but it
         // turns out to be important for performance on invalid zero-solution puzzles.
         //
         state.boxes[indexing.box].cells = state.boxes[indexing.box].cells.and_not(
-                tables.cell_assignment_eliminations[digit - '1'][indexing.cell]);
+                tables.cell_assignment_eliminations[digit][indexing.cell]);
 
-        const BitVec08x16 & digit_bitmask = tables.one_value_mask[digit - '1'];
+        const BitVec08x16 & digit_bitmask = tables.one_value_mask[digit];
         // Merge band eliminations; we'll propagate after all clue are processed.
         state.bands[0][indexing.box_y].eliminations = BitVec08x16::X_and_Y_or_Z(
                 tables.peer_x_elem_to_config_mask[indexing.box_x][indexing.cell_y],
