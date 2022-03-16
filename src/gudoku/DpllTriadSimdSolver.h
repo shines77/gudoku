@@ -20,12 +20,22 @@
 #include <bitset>
 #include <array>        // For std::array<T, Size>
 
+#define USE_ALIGN_AS    0
+
 #include "gudoku/BasicSolver.h"
 #include "gudoku/Sudoku.h"
 #include "gudoku/BitUtils.h"
 #include "gudoku/BitSet.h"
 #include "gudoku/BitArray.h"
 #include "gudoku/BitVec.h"
+
+#ifndef ALIGN_AS
+#if USE_ALIGN_AS
+#define ALIGN_AS(n) alignas(n)
+#else
+#define ALIGN_AS(n)
+#endif
+#endif // ALIGN_AS
 
 namespace gudoku {
 
@@ -103,7 +113,7 @@ union IntVec64 {
 //
 //  Each cell also has a minimum. So there are three sets of clauses represented here.
 //
-struct alignas(32) Box {
+struct ALIGN_AS(32) Box {
     BitVec16x16 cells;
 
     Box() noexcept : cells(BitVec16x16::full16(kAll)) {}
@@ -148,7 +158,7 @@ struct alignas(32) Box {
 // is higher, and the benefit is lower (the benefit for Bands chiefly arises from the
 // way we do puzzle initialization).
 //
-struct alignas(32) Band {
+struct ALIGN_AS(32) Band {
     BitVec08x16 configurations;
     BitVec08x16 eliminations;
 
@@ -167,7 +177,7 @@ struct alignas(32) Band {
     }
 };
 
-struct alignas(32) State {
+struct ALIGN_AS(32) State {
     Band bands[2][3];
     Box  boxes[9];
 
@@ -182,7 +192,7 @@ struct alignas(32) State {
     }
 
     inline void init() {
-#if 1
+#if USE_ALIGN_AS
         const BitVec16x16_AVX default_band(kAll32, kAll32, kAll32, 0, 0, 0, 0, 0);
         default_band.saveAligned((void *)&bands[0][0].configurations);
         default_band.saveAligned((void *)&bands[0][1].configurations);
@@ -275,7 +285,7 @@ struct alignas(32) State {
 
 #pragma pack(push, 1)
 
-struct alignas(32) BoxIndexing {
+struct ALIGN_AS(32) BoxIndexing {
     static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
     static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
     static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
@@ -322,7 +332,7 @@ struct alignas(32) BoxIndexing {
 static const uint16_t shuf00 = 0x0100, shuf01 = 0x0302, shuf02 = 0x0504, shuf03 = 0x0706;
 static const uint16_t shuf04 = 0x0908, shuf05 = 0X0B0A, shuf06 = 0X0D0C, shuf07 = 0X0F0E;
 
-struct alignas(32) Tables {
+struct ALIGN_AS(32) Tables {
     // @formatter:off
     // Used when assigning a candidate during initialization
     BitVec16x16 cell_assignment_eliminations[9][16];
@@ -571,7 +581,7 @@ struct alignas(32) Tables {
 
 const Tables tables {};
 
-class alignas(32) DpllTriadSimdSolver : public BasicSolver {
+class ALIGN_AS(32) DpllTriadSimdSolver : public BasicSolver {
 public:
     typedef BasicSolver                 basic_solver;
     typedef DpllTriadSimdSolver         this_type;
