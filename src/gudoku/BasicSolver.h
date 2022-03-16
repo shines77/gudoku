@@ -22,14 +22,14 @@ class alignas(32) BasicSolver {
 public:
     typedef BasicSolver this_type;
 
-    static const size_t Rows = Sudoku::kRows;
-    static const size_t Cols = Sudoku::kCols;
-    static const size_t Boxes = Sudoku::kBoxes;
-    static const size_t BoxSize = Sudoku::kBoxSize;
-    static const size_t Numbers = Sudoku::kNumbers;
+    static const size_t Rows = Sudoku::Rows;
+    static const size_t Cols = Sudoku::Cols;
+    static const size_t Boxes = Sudoku::Boxes;
+    static const size_t BoxSize = Sudoku::BoxSize;
+    static const size_t Numbers = Sudoku::Numbers;
 
-    static const size_t BoardSize = Sudoku::kBoardSize;
-    static const size_t TotalSize = Sudoku::kTotalSize;
+    static const size_t BoardSize = Sudoku::BoardSize;
+    static const size_t TotalSize = Sudoku::TotalSize;
 
 protected:
     size_t num_guesses_;

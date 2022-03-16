@@ -80,7 +80,7 @@ static size_t bm_puzzleTotal = 0;
 
 void make_sudoku_board(Board & board, size_t index)
 {
-    for (size_t row = 0; row < Sudoku::kRows; row++) {
+    for (size_t row = 0; row < Sudoku::Rows; row++) {
         size_t row_base = row * 9;
         size_t col = 0;
         const char * prows = test_case[index].rows[row];
@@ -92,16 +92,16 @@ void make_sudoku_board(Board & board, size_t index)
                 else
                     board.cells[row_base + col] = '.';
                 col++;
-                assert(col <= Sudoku::kCols);
+                assert(col <= Sudoku::Cols);
             }
             else if (val == '.') {
                 board.cells[row_base + col] = '.';
                 col++;
-                assert(col <= Sudoku::kCols);
+                assert(col <= Sudoku::Cols);
             }
             prows++;
         }
-        assert(col == Sudoku::kCols);
+        assert(col == Sudoku::Cols);
     }
 }
 
@@ -125,17 +125,17 @@ size_t read_sudoku_board(Board & board, char line[256])
                 board.cells[pos] = val;
             else
                 board.cells[pos] = '.';
-            assert(pos < Sudoku::kBoardSize);
+            assert(pos < Sudoku::BoardSize);
             pos++;
             
         }
         else if ((val == '.') || (val == ' ') || (val == '-')) {
             board.cells[pos] = '.';
-            assert(pos < Sudoku::kBoardSize);
+            assert(pos < Sudoku::BoardSize);
             pos++;
         }
     }
-    assert(pos <= Sudoku::kBoardSize);
+    assert(pos <= Sudoku::BoardSize);
     return pos;
 }
 
@@ -156,7 +156,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
             std::cout << "File name: " << filename << std::endl;
             std::cout << "File size: " << total_size << " Byte(s)" << std::endl;
 
-            size_t predictedSize = total_size / (Sudoku::kBoardSize + 1) + 200;
+            size_t predictedSize = total_size / (Sudoku::BoardSize + 1) + 200;
             puzzles.resize(predictedSize);
 
             std::cout << "Predicted Size: " << predictedSize << std::endl << std::endl;
@@ -170,7 +170,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
                 board.clear();
                 size_t num_grids = read_sudoku_board(board, line);
                 // Sudoku::BoardSize = 81
-                if (num_grids >= Sudoku::kBoardSize) {
+                if (num_grids >= Sudoku::BoardSize) {
                     if (puzzleCount < predictedSize)
                         puzzles[puzzleCount] = board;
                     else

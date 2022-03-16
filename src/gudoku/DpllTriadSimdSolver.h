@@ -286,21 +286,21 @@ struct ALIGN_AS(32) State {
 #pragma pack(push, 1)
 
 struct ALIGN_AS(32) BoxIndexing {
-    static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
-    static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
-    static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
-    static const size_t BoxCountY = Sudoku::kBoxCountY;      // 3
-    static const size_t MinNumber = Sudoku::kMinNumber;      // 1
-    static const size_t MaxNumber = Sudoku::kMaxNumber;      // 9
+    static const size_t BoxCellsX = Sudoku::BoxCellsX;      // 3
+    static const size_t BoxCellsY = Sudoku::BoxCellsY;      // 3
+    static const size_t BoxCountX = Sudoku::BoxCountX;      // 3
+    static const size_t BoxCountY = Sudoku::BoxCountY;      // 3
+    static const size_t MinNumber = Sudoku::MinNumber;      // 1
+    static const size_t MaxNumber = Sudoku::MaxNumber;      // 9
 
-    static const size_t Rows = Sudoku::kRows;
-    static const size_t Cols = Sudoku::kCols;
-    static const size_t Boxes = Sudoku::kBoxes;
-    static const size_t BoxSize = Sudoku::kBoxSize;
-    static const size_t Numbers = Sudoku::kNumbers;
+    static const size_t Rows = Sudoku::Rows;
+    static const size_t Cols = Sudoku::Cols;
+    static const size_t Boxes = Sudoku::Boxes;
+    static const size_t BoxSize = Sudoku::BoxSize;
+    static const size_t Numbers = Sudoku::Numbers;
 
-    static const size_t BoardSize = Sudoku::kBoardSize;
-    static const size_t TotalSize = Sudoku::kTotalSize;
+    static const size_t BoardSize = Sudoku::BoardSize;
+    static const size_t TotalSize = Sudoku::TotalSize;
 
     uint8_t box_x;
     uint8_t box_y;
@@ -570,9 +570,9 @@ struct ALIGN_AS(32) Tables {
             }
         }
 
-        for (int x = 0; x < (int)Sudoku::kBoxCountX; x++) {
-            for (int y = 0; y < (int)Sudoku::kBoxCountY; y++) {
-                int box_idx = x * (int)Sudoku::kBoxCountY + y;
+        for (int x = 0; x < (int)Sudoku::BoxCountX; x++) {
+            for (int y = 0; y < (int)Sudoku::BoxCountY; y++) {
+                int box_idx = x * (int)Sudoku::BoxCountY + y;
                 triads_shift0_to_config_elims16[box_idx] =
                         BitVec16x16{triads_shift0_to_config_elims[x], triads_shift0_to_config_elims[y]};
                 triads_shift1_to_config_elims16[box_idx] =
@@ -596,37 +596,37 @@ public:
     typedef BasicSolver                 basic_solver;
     typedef DpllTriadSimdSolver         this_type;
 
-    static const size_t kAlignment = Sudoku::kAlignment;
-    static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
-    static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
-    static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
-    static const size_t BoxCountY = Sudoku::kBoxCountY;      // 3
-    static const size_t MinNumber = Sudoku::kMinNumber;      // 1
-    static const size_t MaxNumber = Sudoku::kMaxNumber;      // 9
+    static const size_t kAlignment = Sudoku::Alignment;
+    static const size_t BoxCellsX = Sudoku::BoxCellsX;      // 3
+    static const size_t BoxCellsY = Sudoku::BoxCellsY;      // 3
+    static const size_t BoxCountX = Sudoku::BoxCountX;      // 3
+    static const size_t BoxCountY = Sudoku::BoxCountY;      // 3
+    static const size_t MinNumber = Sudoku::MinNumber;      // 1
+    static const size_t MaxNumber = Sudoku::MaxNumber;      // 9
 
-    static const size_t Rows = Sudoku::kRows;
-    static const size_t Cols = Sudoku::kCols;
-    static const size_t Boxes = Sudoku::kBoxes;
-    static const size_t BoxSize = Sudoku::kBoxSize;
-    static const size_t Numbers = Sudoku::kNumbers;
+    static const size_t Rows = Sudoku::Rows;
+    static const size_t Cols = Sudoku::Cols;
+    static const size_t Boxes = Sudoku::Boxes;
+    static const size_t BoxSize = Sudoku::BoxSize;
+    static const size_t Numbers = Sudoku::Numbers;
 
-    static const size_t BoardSize = Sudoku::kBoardSize;
-    static const size_t TotalSize = Sudoku::kTotalSize;
-    static const size_t Neighbors = Sudoku::kNeighbors;
+    static const size_t BoardSize = Sudoku::BoardSize;
+    static const size_t TotalSize = Sudoku::TotalSize;
+    static const size_t Neighbors = Sudoku::Neighbors;
 
-    static const size_t Rows16 = Sudoku::kRows16;
-    static const size_t Cols16 = Sudoku::kCols16;
-    static const size_t Numbers10 = Sudoku::kNumbers10;
-    static const size_t Numbers16 = Sudoku::kNumbers16;
-    static const size_t Boxes16 = Sudoku::kBoxes16;
-    static const size_t BoxSize16 = Sudoku::kBoxSize16;
-    static const size_t BoardSize16 = Sudoku::kBoardSize16;
+    static const size_t Rows16 = Sudoku::Rows16;
+    static const size_t Cols16 = Sudoku::Cols16;
+    static const size_t Numbers10 = Sudoku::Numbers10;
+    static const size_t Numbers16 = Sudoku::Numbers16;
+    static const size_t Boxes16 = Sudoku::Boxes16;
+    static const size_t BoxSize16 = Sudoku::BoxSize16;
+    static const size_t BoardSize16 = Sudoku::BoardSize16;
 
-    static const size_t kAllRowBits = Sudoku::kAllRowBits;
-    static const size_t kAllColBits = Sudoku::kAllColBits;
-    static const size_t kAllBoxBits = Sudoku::kAllBoxBits;
-    static const size_t kAllBoxCellBits = Sudoku::kAllBoxCellBits;
-    static const size_t kAllNumberBits = Sudoku::kAllNumberBits;
+    static const size_t kAllRowBits = Sudoku::AllRowBits;
+    static const size_t kAllColBits = Sudoku::AllColBits;
+    static const size_t kAllBoxBits = Sudoku::AllBoxBits;
+    static const size_t kAllBoxCellBits = Sudoku::AllBoxCellBits;
+    static const size_t kAllNumberBits = Sudoku::AllNumberBits;
 
     // all pencil marks set - 27 bits per band
     static const uint32_t kBitSet27          = 0x07FFFFFFUL;
