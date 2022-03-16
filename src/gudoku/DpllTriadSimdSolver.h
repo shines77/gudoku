@@ -632,11 +632,17 @@ public:
     static const uint32_t kBand2RowBits  = 0700;
 
 private:
+#if USE_ALIGN_AS
     State state_;
+#endif
     State result_state_;
 
 public:
+#if USE_ALIGN_AS
     DpllTriadSimdSolver() : basic_solver(), state_(), result_state_() {}
+#else
+    DpllTriadSimdSolver() : basic_solver(), result_state_() {}
+#endif
     ~DpllTriadSimdSolver() {}
 
 private:
@@ -1000,7 +1006,9 @@ private:
     static
     JSTD_FORCE_INLINE
     bool initSudoku(const char * puzzle, State & state) {
+#if USE_ALIGN_AS
         state.init();
+#endif
 
         uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
         while (nonDotMask64 != 0) {
@@ -1094,7 +1102,11 @@ public:
     size_t solve(const char * puzzle, char * solution, size_t limit) {
         this->resetStatistics(limit);
 
+#if USE_ALIGN_AS
         State & state = this->state_;
+#else
+        State state;
+#endif
         bool success = this->initSudoku(puzzle, state);
         if (success) {
             countSolutionsConsistentWithPartialAssignment(state);
