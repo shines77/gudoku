@@ -1032,11 +1032,11 @@ private:
         IntVec32 minirow_high(pUInt64->u32_1);
         uint32_t mask2 = minirow_high.u16_0;
         solution[minirow_base + 2] = tables.bitmask_to_digit[mask2];
-#else        
+#else
         solution[minirow_base + 0] = tables.bitmask_to_digit[uint16_t((minirow >> 0u ) & 0xFFFF)];
         solution[minirow_base + 1] = tables.bitmask_to_digit[uint16_t((minirow >> 16u) & 0xFFFF)];
         solution[minirow_base + 2] = tables.bitmask_to_digit[uint16_t( minirow >> 32u) & 0xFFFFU];
-#endif        
+#endif
     }
 
 #if 1
