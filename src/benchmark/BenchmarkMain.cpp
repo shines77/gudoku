@@ -214,8 +214,8 @@ void run_a_testcase(size_t index)
     printf("------------------------------------------\n\n");
 }
 
-template <typename Solver>
-void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name, const size_t limit)
+template <typename Solver, int LimitSolutions>
+void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
 {
     //printf("------------------------------------------\n\n");
     printf("gudoku: %s\n\n", name);
@@ -239,7 +239,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
 
     for (size_t i = 0; i < puzzleTotal; i++) {
         Board & board = puzzles[i];
-        size_t solutions = solver.solve(&board.cells[0], &solution.cells[0], limit);
+        size_t solutions = solver.solve(&board.cells[0], &solution.cells[0], LimitSolutions);
         if (solutions == 1) {
             size_t num_guesses = solver.get_num_guesses();
             total_guesses += num_guesses;
@@ -296,9 +296,9 @@ void run_all_benchmark(const char * filename)
     static const int kSolutionMode = (LimitSolutions == 1) ? 1: 0;
 
 #if !defined(_DEBUG)
-    run_sudoku_test<DpllTriadSimdSolver<kSolutionMode>>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver", LimitSolutions);
+    run_sudoku_test<DpllTriadSimdSolver<kSolutionMode>, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver");
 #else
-    run_sudoku_test<DpllTriadSimdSolver<kSolutionMode>>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver", LimitSolutions);
+    run_sudoku_test<DpllTriadSimdSolver<kSolutionMode>, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "DpllTriadSimdSolver");
 #endif
 }
 
