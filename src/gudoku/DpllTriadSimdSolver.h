@@ -163,7 +163,7 @@ struct ALIGN_AS(32) Band {
     BitVec08x16 eliminations;
 
     Band() noexcept
-        : configurations(kAll, kAll, kAll, kAll, kAll, kAll, 0, 0), eliminations(0, 0) {
+        : configurations(kAll, kAll, kAll, kAll, kAll, kAll, 0, 0), eliminations() {
     }
 
     Band(const Band & src) noexcept
@@ -1136,5 +1136,8 @@ public:
 };
 
 } // namespace gudoku
+
+#undef USE_ALIGN_AS
+#undef ALIGN_AS
 
 #endif // GUDOKU_DPLL_TRIAD_SIMD_SOLVER_H
