@@ -10,18 +10,13 @@
 #endif // GUDOKU_NO_MAIN
 
 #if (GUDOKU_NO_MAIN != 0)
-
-#include "gudoku/CPUWarmUp.h"
-#include "gudoku/StopWatch.h"
-
-#include "gudoku/gudoku.h"
-#include "gudoku/BitUtils.h"
-
 #include "gudoku/DpllTriadSimdSolver.h"
+#endif
 
-using namespace gudoku;
+#if 0
+#if (GUDOKU_NO_MAIN != 0)
 
-namespace gudoku {
+namespace {
 DpllTriadSimdSolver<0> solver_none{};
 DpllTriadSimdSolver<1> solver_last{};
 }
@@ -52,3 +47,4 @@ size_t gudoku_solver(const char * sudoku, char * solution, uint32_t configuratio
 }
 
 #endif // (GUDOKU_NO_MAIN != 0)
+#endif

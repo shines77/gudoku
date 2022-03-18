@@ -37,7 +37,9 @@
 #endif
 #endif // ALIGN_AS
 
-namespace gudoku {
+using namespace gudoku;
+
+namespace {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
@@ -1135,7 +1137,47 @@ public:
     }
 };
 
-} // namespace gudoku
+#if (GUDOKU_NO_MAIN != 0)
+DpllTriadSimdSolver<0> solver_none{};
+DpllTriadSimdSolver<1> solver_last{};
+#endif
+
+} // namespace
+
+#if (GUDOKU_NO_MAIN != 0)
+
+#ifdef __cplusplus
+extern "C"
+#endif
+size_t gudoku_solver(const char * sudoku, char * solution, uint32_t configuration,
+                     size_t limit, size_t * num_guesses)
+{
+    bool return_last = (limit == 1 || configuration > 0);
+    size_t solutions;
+    if (return_last) {
+        solutions = solver_last.solve(sudoku, solution, limit);
+        *num_guesses = solver_last.get_num_guesses();
+    }
+    else {
+        solutions = solver_none.solve(sudoku, solution, limit);
+        *num_guesses = solver_none.get_num_guesses();
+    }
+    
+    return solutions;
+}
+
+#else // (GUDOKU_NO_MAIN == 0)
+
+#ifdef __cplusplus
+extern "C"
+#endif
+size_t gudoku_solver(const char * sudoku, char * solution, uint32_t configuration,
+                     size_t limit, size_t * num_guesses)
+{
+    return 0;
+}
+
+#endif // (GUDOKU_NO_MAIN != 0)
 
 #undef USE_ALIGN_AS
 #undef ALIGN_AS

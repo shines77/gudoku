@@ -1247,18 +1247,11 @@ struct BitVec08x16 {
             assert(false);
 #else
         if (index == 0) {
-            return (uint64_t)_mm_cvtsi128_si64(this->low.m128);
+            return (uint64_t)_mm_cvtsi128_si64(this->m128);
         }
         else if (index == 1) {
-            __m128i low64 = _mm_srli_si128(this->low.m128, 8);
+            __m128i low64 = _mm_srli_si128(this->m128, 8);
             return (uint64_t)_mm_cvtsi128_si64(low64);
-        }
-        else if (index == 2) {
-            return (uint64_t)_mm_cvtsi128_si64(this->high.m128);
-        }
-        else if (index == 3) {
-            __m128i high64 = _mm_srli_si128(this->high.m128, 8);
-            return (uint64_t)_mm_cvtsi128_si64(high64);
         }
         else {
             assert(false);
