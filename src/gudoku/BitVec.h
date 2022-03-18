@@ -639,6 +639,7 @@ struct BitVec08x16 {
             assert(false);
         }
 #endif
+    }
 
     inline void saveAs2x64(IntVec2x64 & intVec) const {
 #if defined(__SSE4_1__)
