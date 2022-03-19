@@ -149,12 +149,6 @@
 #endif
 #endif // _MSC_VER
 
-//////////////////////////////////////////////////////////////////////////
-
-// SSE2
-
-//////////////////////////////////////////////////////////////////////////
-
 /////////////////////////////////////////////
 
 #ifndef _mm_bslli_si128
@@ -2380,6 +2374,7 @@ struct BitVec16x16_SSE {
         #undef CASE_HIGH
     }
 
+    // BitVec16x16_SSE
     inline void saveAs4x64(IntVec4x64 & intVec) const {
         intVec.u64_0 = this->low.extractU64<0>();
         intVec.u64_1 = this->low.extractU64<1>();
