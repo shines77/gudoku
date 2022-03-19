@@ -1252,7 +1252,7 @@ struct BitVec08x16 {
     }
 
     // BitVec08x16
-    inline void insertU64(int index, uint64_t value) {
+    inline void insertU64(const int index, uint64_t value) {
 #if defined(__SSE4_1__)
         if (index == 0)
             _mm_insert_epi64(this->m128, value, 0);
@@ -2404,7 +2404,7 @@ struct BitVec16x16_SSE {
     }
 
     // BitVec16x16_SSE
-    inline void insertU64(int index, uint64_t value) {
+    inline void insertU64(const int index, uint64_t value) {
         if (index == 0)
             this->low.insertU64(0, value);
         else if (index == 1)
@@ -3586,7 +3586,7 @@ struct BitVec16x16_AVX {
     }
 
     // BitVec16x16_AVX
-    inline void insertU64(int index, uint64_t value) {
+    inline void insertU64(const int index, uint64_t value) {
         if (index == 0)
             _mm256_insert_epi64(this->m256, value, 0);
         else if (index == 1)
