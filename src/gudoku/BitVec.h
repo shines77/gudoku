@@ -2389,7 +2389,7 @@ struct BitVec16x16_SSE {
 
     // BitVec16x16_SSE
     template <int index>
-    inline uint64_t extractU64(int index) const {
+    inline uint64_t extractU64() const {
         if (index == 0)
             return this->low.extractU64<0>();
         else if (index == 1)
