@@ -149,6 +149,12 @@
 #endif
 #endif // _MSC_VER
 
+//////////////////////////////////////////////////////////////////////////
+
+// SSE2
+
+//////////////////////////////////////////////////////////////////////////
+
 /////////////////////////////////////////////
 
 #ifndef _mm_bslli_si128
@@ -378,6 +384,7 @@ __m256i mm256_insert_epi16(__m256i target, int value)
         case 6:
         case 7:
         {
+            // There maybe is a bug because the value of the high 128 bits maybe lost.
             __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, (index < 8) ? index : 0);
             result = _mm256_castsi128_si256(result128);
             break;
@@ -437,9 +444,8 @@ static inline
 int64_t mm256_extract_epi64(__m256i src)
 {
     assert(index >= 0 && index < 4);
-    static const int _index = index % 2;
-#if 1
-    // Special version
+#if defined(__AVX__) && defined(__SSE4_1__)
+    // Maybe faster than the below version
     if (index == 0) {
         __m128i m128 = _mm256_castsi256_si128(src);
         return _mm_cvtsi128_si64(m128);
@@ -1238,7 +1244,14 @@ struct BitVec08x16 {
 
     // BitVec08x16
     inline uint64_t extractU64(int index) const {
-#if defined(__SSE4_1__)
+#if defined(__SSE2__)
+        if (index == 0)
+            return (uint64_t)_mm_cvtsi128_si64(this->m128);
+        else if (index == 1)
+            return (uint64_t)_mm_cvtsi128_si64(_mm_unpackhi_epi64(this->m128, this->m128));
+        else
+            assert(false);
+#elif defined(__SSE4_1__)
         if (index == 0)
             return (uint64_t)_mm_extract_epi64(this->m128, 0);
         else if (index == 1)
@@ -1273,19 +1286,19 @@ struct BitVec08x16 {
         // SSE2, SSSE3
         __m128i val;
         if (index == 0) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Copy high 64 bit to low 64 bit
+            // Copy high 64 bits to low 64 bits
             this->m128 = _mm_shuffle_epi32(this->m128, _MM_SHUFFLE(2, 3, 2, 3));
-            // Copy low 64 bit to high 64 bit
+            // Copy low 64 bits to high 64 bits
             val = _mm_shuffle_epi32(val, _MM_SHUFFLE(0, 1, 0, 1));
             // = ((a << 128) or b) >> (imm * 8)
             this->m128 = _mm_alignr_epi8(this->m128, val, 8);
         }
         else if (index == 1) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Copy low 64 bit to high 64 bit
+            // Copy low 64 bits to high 64 bits
             this->m128 = _mm_shuffle_epi32(this->m128, _MM_SHUFFLE(0, 1, 0, 1));
             // = ((a << 128) or b) >> (imm * 8)
             this->m128 = _mm_alignr_epi8(val, this->m128, 8);
@@ -1294,24 +1307,46 @@ struct BitVec08x16 {
             assert(false);
         }
 #else
+#if 1
+        //
+        // SSE2: Maybe is a better optimize version
+        //
+        __m128i val;
+        if (index == 0) {
+            // The low 64 bits
+            val = _mm_cvtsi64_si128(value);
+            // a[127:64] | b[63:0], and cast __m128d to __m128i
+            this->m128 = _mm_castpd_si128(_mm_move_sd(_mm_castsi128_pd(this->m128), _mm_castsi128_pd(val)));
+        }
+        else if (index == 1) {
+            // The low 64 bits
+            val = _mm_cvtsi64_si128(value);
+            // Copy low 64 bits to high 64 bits
+            val = _mm_unpacklo_epi64(val, val);
+            // a[127:64] | b[63:0], and cast __m128d to __m128i
+            this->m128 = _mm_castpd_si128(_mm_move_sd(_mm_castsi128_pd(val), _mm_castsi128_pd(this->m128)));
+        }
+        else {
+            assert(false);
+        }
+#else
         // SSE2
         __m128i val;
         if (index == 0) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Remove the low 64 bit
+            // Remove the low 64 bits
             this->m128 = _mm_srli_si128(this->m128, 8);
             this->m128 = _mm_slli_si128(this->m128, 8);
-            // The high 64 bit Or value
+            // The high 64 bits Or value
             this->m128 = _mm_or_si128(this->m128, val);
         }
         else if (index == 1) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Remove the high 64 bit
-            this->m128 = _mm_slli_si128(this->m128, 8);
-            this->m128 = _mm_srli_si128(this->m128, 8);
-            // Left shift 64 bit
+            // Remove the high 64 bits
+            this->m128 = _mm_move_epi64(this->m128);
+            // Left shift 64 bits
             val = _mm_slli_si128(val, 8);
             // The value Or the low 64 bit
             this->m128 = _mm_or_si128(val, this->m128);
@@ -1319,6 +1354,7 @@ struct BitVec08x16 {
         else {
             assert(false);
         }
+#endif
 #endif
     }
 
@@ -1384,11 +1420,10 @@ struct BitVec08x16 {
 #ifdef __SSSE3__
         return shuffle(consts.rotate_rows1);
 #else
-        __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0xffff, 0x0, 0xffff, 0xffff, 0xffff, 0x0);
-        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0x0, 0xffff, 0x0, 0x0, 0x0, 0xffff);
-        return _mm_or_si128(
-                _mm_and_si128(_mm_bsrli_si128(this->m128, 2), mask1),
-                _mm_and_si128(_mm_bslli_si128(this->m128, 6), mask2));
+        __m128i mask1 = _mm_setr_epi16(0xFFFF, 0xFFFF, 0xFFFF, 0x0, 0xFFFF, 0xFFFF, 0xFFFF, 0x0);
+        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0x0, 0xFFFF, 0x0, 0x0, 0x0, 0xFFFF);
+        return _mm_or_si128(_mm_and_si128(_mm_bsrli_si128(this->m128, 2), mask1),
+                            _mm_and_si128(_mm_bslli_si128(this->m128, 6), mask2));
 #endif
     }
 
@@ -1396,11 +1431,10 @@ struct BitVec08x16 {
 #ifdef __SSSE3__
         return _mm_shuffle_epi32(this->m128, 0b10110001);
 #else
-        __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0);
-        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff);
-        return _mm_or_si128(
-                _mm_and_si128(_mm_bsrli_si128(this->m128, 4), mask1),
-                _mm_and_si128(_mm_bslli_si128(this->m128, 4), mask2));
+        __m128i mask1 = _mm_setr_epi16(0xFFFF, 0xFFFF, 0x0, 0x0, 0xFFFF, 0xFFFF, 0x0, 0x0);
+        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xFFFF, 0xFFFF, 0x0, 0x0, 0xFFFF, 0xFFFF);
+        return _mm_or_si128(_mm_and_si128(_mm_bsrli_si128(this->m128, 4), mask1),
+                            _mm_and_si128(_mm_bslli_si128(this->m128, 4), mask2));
 #endif
     }
 
@@ -3607,6 +3641,28 @@ struct BitVec16x16_AVX {
 
     // BitVec16x16_AVX
     inline uint64_t extractU64(int index) const {
+#if 1
+        // Maybe faster then the below version
+        if (index == 0) {
+            __m128i m128 = _mm256_castsi256_si128(this->m256);
+            return (uint64_t)_mm_cvtsi128_si64(m128);
+        }
+        else if (index == 1) {
+            __m128i m128 = _mm256_castsi256_si128(this->m256);
+            return (uint64_t)_mm_extract_epi64(m128, 1);
+        }
+        else if (index == 2) {
+            __m128i m128 = _mm256_extractf128_si256(this->m256, 1);
+            return (uint64_t)_mm_cvtsi128_si64(m128);
+        }
+        else if (index == 3) {
+            __m128i m128 = _mm256_extractf128_si256(this->m256, 1);
+            return (uint64_t)_mm_extract_epi64(m128, 1);
+        }
+        else {
+            assert(false);
+        }
+#else
         if (index == 0)
             return (uint64_t)_mm256_extract_epi64(this->m256, 0);
         else if (index == 1)
@@ -3617,6 +3673,7 @@ struct BitVec16x16_AVX {
             return (uint64_t)_mm256_extract_epi64(this->m256, 3);
         else
             assert(false);
+#endif
         return 0;
     }
 
