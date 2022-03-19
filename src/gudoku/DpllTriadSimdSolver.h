@@ -1028,15 +1028,15 @@ private:
         uint64_t nonDotMask64 = whichIsNotDots64<false>(puzzle);
         while (nonDotMask64 != 0) {
             uint32_t pos = BitUtils::bsf64(nonDotMask64);
-            nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
             initClue(puzzle, state, pos);
+            nonDotMask64 = BitUtils::clearLowBit64(nonDotMask64);
         }       
 
         uint32_t nonDotMask16 = whichIsNotDots16<false>(puzzle + 64);
         while (nonDotMask16 != 0) {
             uint32_t pos = BitUtils::bsf32(nonDotMask16);
-            nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
             initClue(puzzle, state, pos + 64);
+            nonDotMask16 = BitUtils::clearLowBit32(nonDotMask16);
         }
 
         if (puzzle[80] != '.') {
@@ -1080,11 +1080,11 @@ private:
             const Box & box = state.boxes[box_idx];
             int box_base = tables.box_base_tbl[box_idx];
             assert(box_base == (tables.div3[box_idx] * 27 + tables.mod3[box_idx] * 3));
-            uint64_t minirow = box.cells.getAsU64<0>();
+            uint64_t minirow = box.cells.extractU64<0>();
             extractMiniRow(minirow, box_base,      solution);
-            minirow = box.cells.getAsU64<1>();
+            minirow = box.cells.extractU64<1>();
             extractMiniRow(minirow, box_base + 9,  solution);
-            minirow = box.cells.getAsU64<2>();
+            minirow = box.cells.extractU64<2>();
             extractMiniRow(minirow, box_base + 18, solution);
         }
     }

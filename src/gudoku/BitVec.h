@@ -624,40 +624,6 @@ struct BitVec08x16 {
         _mm_storeu_si128((__m128i *)dest_mem_addr, tmp);
     }
 
-    template <int index>
-    inline uint64_t getAsU64() const {
-#if defined(__SSE4_1__)
-        if (index == 0)
-            return (uint64_t)_mm_extract_epi64(this->m128, 0);
-        else if (index == 1)
-            return (uint64_t)_mm_extract_epi64(this->m128, 1);
-        else
-            assert(false);
-#else
-        if (index == 0) {
-            return (uint64_t)_mm_cvtsi128_si64(this->m128);
-        }
-        else if (index == 1) {
-            __m128i low64 = _mm_srli_si128(this->m128, 8);
-            return (uint64_t)_mm_cvtsi128_si64(low64);
-        }
-        else {
-            assert(false);
-        }
-#endif
-    }
-
-    inline void saveAs2x64(IntVec2x64 & intVec) const {
-#if defined(__SSE4_1__)
-        intVec.u64_0 = _mm_extract_epi64(this->m128, 0);
-        intVec.u64_1 = _mm_extract_epi64(this->m128, 1);
-#else
-        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->m128);
-        __m128i low64 = _mm_srli_si128(this->m128, 8);
-        intVec.u64_1 = (uint64_t)_mm_cvtsi128_si64(low64);
-#endif
-    }
-
     inline bool operator == (const BitVec08x16 & other) const {
         return this->isEqual(other);
     }
@@ -1243,14 +1209,26 @@ struct BitVec08x16 {
     }
 
     // BitVec08x16
-    inline uint64_t extractU64(int index) const {
+    inline void saveAs2x64(IntVec2x64 & intVec) const {
+        intVec.u64_0 = this->extractU64<0>();
+        intVec.u64_1 = this->extractU64<1>();
+    }
+
+    // BitVec08x16
+    template <int index>
+    inline uint64_t extractU64() const {
 #if defined(__SSE2__)
-        if (index == 0)
+        if (index == 0) {
             return (uint64_t)_mm_cvtsi128_si64(this->m128);
-        else if (index == 1)
-            return (uint64_t)_mm_cvtsi128_si64(_mm_unpackhi_epi64(this->m128, this->m128));
-        else
+        }
+        else if (index == 1) {
+            // Copy high 64 bits to low 64 bits
+            __m128i high64 = _mm_unpackhi_epi64(this->m128, this->m128);
+            return (uint64_t)_mm_cvtsi128_si64(high64);
+        }
+        else {
             assert(false);
+        }
 #elif defined(__SSE4_1__)
         if (index == 0)
             return (uint64_t)_mm_extract_epi64(this->m128, 0);
@@ -1896,41 +1874,6 @@ struct BitVec16x16_SSE {
 #endif
     }
 
-    template <int index>
-    inline uint64_t getAsU64() const {
-        if (index == 0)
-            return this->low.getAsU64<0>();
-        else if (index == 1)
-            return this->low.getAsU64<1>();
-        else if (index == 2)
-            return this->high.getAsU64<0>();
-        else if (index == 3)
-            return this->high.getAsU64<1>();
-        else
-            assert(false);
-    }
-
-    inline void saveAs4x64(IntVec4x64 & intVec) const {
-#if 0
-        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->low.m128);
-        intVec.u64_1 = (uint64_t)_mm_extract_epi64(this->low.m128, 1);
-        intVec.u64_2 = (uint64_t)_mm_cvtsi128_si64(this->high.m128);
-        //intVec.u64_3 = _mm_extract_epi64(this->high.m128, 1);
-#elif defined(__SSE4_1__)
-        intVec.u64_0 = _mm_extract_epi64(this->low.m128, 0);
-        intVec.u64_1 = _mm_extract_epi64(this->low.m128, 1);
-        intVec.u64_2 = _mm_extract_epi64(this->high.m128, 0);
-        //intVec.u64_3 = _mm_extract_epi64(this->high.m128, 1);
-#else
-        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->low.m128);
-        __m128i low64 = _mm_srli_si128(this->low.m128, 8);
-        intVec.u64_1 = (uint64_t)_mm_cvtsi128_si64(low64);
-        intVec.u64_2 = (uint64_t)_mm_cvtsi128_si64(this->high.m128);
-        //__m128i high64 = _mm_srli_si128(this->high, 8);
-        //intVec.u64_3 = (uint64_t)_mm_cvtsi128_si64(high64);
-#endif
-    }
-
     inline bool operator == (const BitVec16x16_SSE & other) const {
         return this->isEqual(other);
     }
@@ -2437,16 +2380,24 @@ struct BitVec16x16_SSE {
         #undef CASE_HIGH
     }
 
+    inline void saveAs4x64(IntVec4x64 & intVec) const {
+        intVec.u64_0 = this->low.extractU64<0>();
+        intVec.u64_1 = this->low.extractU64<1>();
+        intVec.u64_2 = this->high.extractU64<0>();
+        //intVec.u64_3 = this->high.extractU64<1>();
+    }
+
     // BitVec16x16_SSE
+    template <int index>
     inline uint64_t extractU64(int index) const {
         if (index == 0)
-            return this->low.extractU64(0);
+            return this->low.extractU64<0>();
         else if (index == 1)
-            return this->low.extractU64(1);
+            return this->low.extractU64<1>();
         else if (index == 2)
-            return this->high.extractU64(0);
+            return this->high.extractU64<0>();
         else if (index == 3)
-            return this->high.extractU64(1);
+            return this->high.extractU64<1>();
         else
             assert(false);
         return 0;
@@ -3055,29 +3006,6 @@ struct BitVec16x16_AVX {
         _mm256_storeu_si256((__m256i *)dest_mem_addr, tmp);
     }
 
-    template <int index>
-    inline uint64_t getAsU64() const {
-#if 1
-        return AVX::mm256_extract_epi64<index>(this->m256);
-#else
-        return (uint64_t)_mm256_extract_epi64(this->m256, index);
-#endif
-    }
-
-    inline void saveAs4x64(IntVec4x64 & intVec) const {
-#if defined(_MSC_VER)
-        intVec.u64_0 = AVX::mm256_extract_epi64<0>(this->m256);
-        intVec.u64_1 = AVX::mm256_extract_epi64<1>(this->m256);
-        intVec.u64_2 = AVX::mm256_extract_epi64<2>(this->m256);
-        //intVec.u64_3 = AVX::mm256_extract_epi64<3>(this->m256);
-#else
-        intVec.u64_0 = _mm256_extract_epi64(this->m256, 0);
-        intVec.u64_1 = _mm256_extract_epi64(this->m256, 1);
-        intVec.u64_2 = _mm256_extract_epi64(this->m256, 2);
-        //intVec.u64_3 = _mm256_extract_epi64(this->m256, 3);
-#endif
-    }
-
     inline bool operator == (const BitVec16x16_AVX & other) const {
         return this->isEqual(other);
     }
@@ -3640,41 +3568,21 @@ struct BitVec16x16_AVX {
     }
 
     // BitVec16x16_AVX
-    inline uint64_t extractU64(int index) const {
+    inline void saveAs4x64(IntVec4x64 & intVec) const {
+        intVec.u64_0 = this->extractU64<0>();
+        intVec.u64_1 = this->extractU64<1>();
+        intVec.u64_2 = this->extractU64<2>();
+        //intVec.u64_3 = this->extractU64<3>();
+    }
+
+    // BitVec16x16_AVX
+    template <int index>
+    inline uint64_t extractU64() const {
 #if 1
-        // Maybe faster then the below version
-        if (index == 0) {
-            __m128i m128 = _mm256_castsi256_si128(this->m256);
-            return (uint64_t)_mm_cvtsi128_si64(m128);
-        }
-        else if (index == 1) {
-            __m128i m128 = _mm256_castsi256_si128(this->m256);
-            return (uint64_t)_mm_extract_epi64(m128, 1);
-        }
-        else if (index == 2) {
-            __m128i m128 = _mm256_extractf128_si256(this->m256, 1);
-            return (uint64_t)_mm_cvtsi128_si64(m128);
-        }
-        else if (index == 3) {
-            __m128i m128 = _mm256_extractf128_si256(this->m256, 1);
-            return (uint64_t)_mm_extract_epi64(m128, 1);
-        }
-        else {
-            assert(false);
-        }
+        return (uint64_t)AVX::mm256_extract_epi64<index>(this->m256);
 #else
-        if (index == 0)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 0);
-        else if (index == 1)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 1);
-        else if (index == 2)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 2);
-        else if (index == 3)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 3);
-        else
-            assert(false);
+        return (uint64_t)_mm256_extract_epi64(this->m256, index);
 #endif
-        return 0;
     }
 
     // BitVec16x16_AVX
