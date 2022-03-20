@@ -865,7 +865,8 @@ private:
 
     static const uint32_t NONE = UINT32_MAX;
 
-    static inline
+    static
+    JSTD_FORCE_INLINE
     std::pair<uint32_t, BitVec08x16>
     chooseBandAndValueToBranch(const State & state) {
         uint32_t best_band = NONE, best_band_count = NONE;
@@ -936,6 +937,7 @@ private:
     }
 
     template <int vertical>
+    JSTD_FORCE_INLINE
     void branchOnBandAndValue(int band_idx, const BitVec08x16 & value_mask, State & state) {
         Band & band = state.bands[vertical][band_idx];
         // We enter with two or more possible configurations for this value

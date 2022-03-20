@@ -352,9 +352,41 @@ template <int index>
 static inline
 int mm256_extract_epi16(__m256i src)
 {
-    __m128i partOfExtract = _mm256_extractf128_si256 (src, index >> 3);
-    int result = _mm_extract_epi16 (partOfExtract, index % 8);
+#if defined(__AVX2__)
+    if (index >= 0 && index < 8) {
+        __m128i low128 = _mm256_castsi256_si128(src);
+        int result = _mm_extract_epi16(low128, (index % 8));
+        return result;
+    }
+    else if (index >= 8 && index < 16) {
+        __m128i high128 = _mm256_extracti128_si256(src, (index >> 3));
+        int result = _mm_extract_epi16(high128, (index % 8));
+        return result;
+    }
+    else {
+        assert(false);
+    }
+#elif defined(__AVX__)
+    if (index >= 0 && index < 8) {
+        __m128i low128 = _mm256_castsi256_si128(src);
+        int result = _mm_extract_epi16(low128, (index % 8));
+        return result;
+    }
+    else if (index >= 8 && index < 16) {
+        __m128i high128 = _mm256_extractf128_si256(src, (index >> 3));
+        int result = _mm_extract_epi16(high128, (index % 8));
+        return result;
+    }
+    else {
+        assert(false);
+    }
+#else
+    // This is gcc original version
+    __m128i partOfExtract = _mm256_extractf128_si256(src, (index >> 3));
+    int result = _mm_extract_epi16(partOfExtract, (index % 8));
     return result;
+#endif // __AVX2__
+    return 0;
 }
 
 //
@@ -367,66 +399,64 @@ template <int index>
 static inline
 __m256i mm256_insert_epi16(__m256i target, int value)
 {
+    static_assert((index >= 0 && index < 16), "AVX::mm256_insert_epi16(): index must be [0-15]");
     __m256i result;
-    switch (index) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-        {
-            // There maybe is a bug because the value of the high 128 bits maybe lost.
-            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, (index < 8) ? index : 0);
-            result = _mm256_castsi128_si256(result128);
-            break;
-        }
-
-        case 8:
-        {
+#if defined(__AVX2__)
+    if (index >= 0 && index < 8) {
 #if 1
-            __m128i high128 = _mm256_extracti128_si256(target, 1);
-            __m128i value128 = _mm_cvtsi32_si128(value);
-            __m128i mixed128 = _mm_blend_epi16(high128, value128, 0x00000001);
-            result = _mm256_inserti128_si256(target, mixed128, 1);
+        __m128i low128 = _mm256_castsi256_si128(target);
+        __m128i low_mixed128 = _mm_insert_epi16(low128, value, (index % 8));
+        __m256i low_mixed256 = _mm256_castsi128_si256(low_mixed128);
+        result = _mm256_blend_epi32(low_mixed256, target, 0b11110000);
 #else
-            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, 0);
-            __m256i result256 = _mm256_inserti128_si256(_mm256_castsi128_si256(result128), result128, 1);
-            result = _mm256_blend_epi16(target, result256, 0b00000001);
+        //
+        // There maybe is a bug because the value of the high 128 bits maybe lost.
+        // But it's faster than the above version.
+        //
+        __m128i low128 = _mm256_castsi256_si128(target);
+        __m128i result128 = _mm_insert_epi16(low128, value, (index < 8) ? index : 0);
+        __m256i result256 = _mm256_castsi128_si256(result128);
+        result = result256;
 #endif
-            break;
-        }
-
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-        {
-            __m128i high128 = _mm256_extracti128_si256(target, 1);
-            __m128i mixed128 = _mm_insert_epi16(high128, value, (index >= 8) ? (index - 8) : 0);
-            result = _mm256_inserti128_si256(target, mixed128, 1);
-            break;
-        }
-
-        default:
-            static_assert((index < 16), "AVX::_mm256_insert_epi16(target, value, index), index is out of range [0, 15].");
-            break;
     }
+    else if (index >= 8 && index < 16) {
+        __m128i high128 = _mm256_extracti128_si256(target, (index >> 3));
+        __m128i high_mixed128 = _mm_insert_epi16(high128, value, (index % 8));
+        result = _mm256_inserti128_si256(target, high_mixed128, (index >> 3));
+    }
+    else {
+        assert(false);
+    }
+#elif defined(__AVX__)
+    if (index >= 0 && index < 8) {
+        __m128i low128 = _mm256_castsi256_si128(target);
+        __m128i low_mixed128 = _mm_insert_epi16(low128, value, (index % 8));
+        result = _mm256_insertf128_si256(target, low_mixed128, (index >> 3));
+    }
+    else if (index >= 8 && index < 16) {
+        __m128i high128 = _mm256_extractf128_si256(target, (index >> 3));
+        __m128i high_mixed128 = _mm_insert_epi16(high128, value, (index % 8));
+        result = _mm256_insertf128_si256(target, high_mixed128, (index >> 3));
+    }
+    else {
+        assert(false);
+    }
+#else
+    // This is gcc original version
+    __m128i partOf128 = _mm256_extractf128_si256(target, (index >> 3));
+    __m128i mixed128 = _mm_insert_epi16(partOf128, value, (index % 8));
+    result = _mm256_insertf128_si256(target, mixed128, (index >> 3));
+#endif
     return result;
 }
 
 template <int index>
 static inline
-__m256i mm256_insert_epi16_glib(__m256i target, int value)
+__m256i mm256_insert_epi16_gcc(__m256i target, int value)
 {
-    __m128i partOfInsert = _mm256_extractf128_si256 (target, index >> 3);
-    partOfInsert = _mm_insert_epi16 (partOfInsert, value, index % 8);
-    __m256i result = _mm256_insertf128_si256 (target, partOfInsert, index >> 3);
+    __m128i partOf128 = _mm256_extractf128_si256(target, (index >> 3));
+    __m128i mixed128 = _mm_insert_epi16(partOf128, value, (index % 8));
+    __m256i result = _mm256_insertf128_si256(target, mixed128, (index >> 3));
     return result;
 }
 
@@ -437,7 +467,7 @@ template <int index>
 static inline
 int64_t mm256_extract_epi64(__m256i src)
 {
-    assert(index >= 0 && index < 4);
+    static_assert((index >= 0 && index < 4), "AVX::mm256_extract_epi64(): index must be [0-3]");
 #if defined(__AVX__) && defined(__SSE4_1__)
     // Maybe faster than the below version
     if (index == 0) {
@@ -464,18 +494,24 @@ int64_t mm256_extract_epi64(__m256i src)
         __m128i m128 = _mm256_castsi256_si128(src);
         return _mm_extract_epi64(m128, index % 2);
     }
-    else {
+    else (index >= 2 && index < 4) {
         __m128i m128 = _mm256_extracti128_si256(src, index >> 1);
         return _mm_extract_epi64(m128, index % 2);
+    }
+    else {
+        assert(false);
     }
 #elif defined(__AVX__) && defined(__SSE4_1__)
     if (index >= 0 && index < 2) {
         __m128i m128 = _mm256_extractf128_si256(src);
         return _mm_extract_epi64(m128, index % 2);
     }
-    else {
+    else (index >= 2 && index < 4) {
         __m128i m128 = _mm256_extractf128_si256(src, index >> 1);
         return _mm_extract_epi64(m128, index % 2);
+    }
+    else {
+        assert(false);
     }
 #else
     // __AVX__ && __SSE2__
@@ -486,23 +522,61 @@ int64_t mm256_extract_epi64(__m256i src)
         // SSE2
         return _mm_cvtsi128_si64(m128);
     }
-    else {
+    else (index >= 2 && index < 4) {
         __m128i m128 = _mm256_extractf128_si256(src, index >> 1);
         if (index == 3)
             m128 = _mm_srli_si128(m128, 8);
         // SSE2
         return _mm_cvtsi128_si64(m128);
     }
+    else {
+        assert(false);
+    }
 #endif
+    return 0;
 }
 
 template <int index>
 static inline
 __m256i mm256_insert_epi64(__m256i target, int64_t value)
 {
+    static_assert((index >= 0 && index < 4), "AVX::mm256_insert_epi64(): index must be [0-3]");
+    __m256i result;
+#if defined(__AVX2__)
+    if (index == 0) {
+        __m128i low64 = _mm_cvtsi64_si128(value);
+        __m256i low256 = _mm256_castsi128_si256(low64);
+        result = _mm256_blend_epi32(target, low256, 0b00000011);
+    }
+    else if (index >= 1 && index < 4) {
+        static const int blend_mask = 0b00000011 << (index * 2);
+        __m128i low64 = _mm_cvtsi64_si128(value);
+        __m256i repeat256 = _mm256_broadcastq_epi64(low64);
+        result = _mm256_blend_epi32(target, repeat256, blend_mask);
+    }
+    else {
+        assert(false);
+    }
+#elif defined(__AVX__)
+    if (index >= 0 && index < 2) {
+        __m128i low128 = _mm256_castsi256_si128(target);
+        __m128i low128_insert = _mm_insert_epi64(low128, value, index % 2);
+        result = _mm256_insertf128_si256 (target, low128_insert, index >> 1);
+    }
+    else if (index >= 2 && index < 4) {
+        __m128i high128 = _mm256_extractf128_si256(target, index >> 1);
+        __m128i high128_insert = _mm_insert_epi64(high128, value, index % 2);
+        result = _mm256_insertf128_si256 (target, high128_insert, index >> 1);
+    }
+    else {
+        assert(false);
+    }
+#else
+    // This is original version
     __m128i partOfInsert = _mm256_extractf128_si256(target, index >> 1);
     partOfInsert = _mm_insert_epi64(partOfInsert, value, index % 2);
-    __m256i result = _mm256_insertf128_si256 (target, partOfInsert, index >> 1);
+    result = _mm256_insertf128_si256 (target, partOfInsert, index >> 1);
+#endif
     return result;
 }
 
@@ -513,7 +587,7 @@ __m256i mm256_insert_epi64(__m256i target, int64_t value)
 //
 
 #ifndef _mm256_extract_epi16
-#define _mm256_extract_epi16(src, index)             AVX::template mm256_extract_epi16<index>(src)
+#define _mm256_extract_epi16(src, index)            AVX::template mm256_extract_epi16<index>(src)
 #endif
 
 #ifndef _mm256_insert_epi16
@@ -2948,11 +3022,16 @@ struct BitVec16x16_AVX {
     }
 
     inline BitVec08x16 getLow() const {
+#if 1
+        __m128i low128 = _mm256_castsi256_si128(this->m256);
+        return low128;
+#else
         return _mm256_extracti128_si256(this->m256, 0);
+#endif
     }
 
-    inline BitVec08x16 getHigh() const {
-        return _mm256_extracti128_si256(this->m256, 1);
+    inline BitVec08x16 getHigh() const {       
+        return _mm256_extractf128_si256(this->m256, 1);
     }
 
     BitVec16x16_AVX & setLow(const BitVec08x16 & low) {
