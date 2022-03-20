@@ -4067,7 +4067,7 @@ uint32_t whichIsDots32(const char * p) {
 template <bool isAligned = false>
 static inline
 uint64_t whichIsDots64(const char * p) {
-#if defined(__AVX512F__) && defined(__AVX512BW__)
+#if defined(__AVX512F__) && defined(__AVX512BW__) && 0
     const __m512i dots = _mm512_set1_epi8('.');
     __m512i src;
     if (isAligned)
@@ -4203,7 +4203,7 @@ uint32_t whichIsNotDots32(const char * p) {
 template <bool isAligned = false>
 static inline
 uint64_t whichIsNotDots64(const char * p) {
-#if defined(__AVX512F__) && defined(__AVX512BW__)
+#if defined(__AVX512F__) && defined(__AVX512BW__) && 0
     const __m512i dots = _mm512_set1_epi8('.');
     __m512i src;
     if (isAligned)
