@@ -44,6 +44,9 @@
 
 #endif //_MSC_VER
 
+//#undef __AVX512VL__
+//#undef __AVX512F__
+
 /*
  * We'll support vectors targeting sse2, sse4_1, avx2, and avx512bitalg instruction sets.
  * While avx2 or avx512 will be ideal, sse4_1 should deliver solid performance. OTOH, sse2
@@ -4072,7 +4075,7 @@ uint64_t whichIsDots64(const char * p) {
     else
         src = _mm512_loadu_si512((const __m512i *)p);
 
-    return (uint32_t)_mm512_cmpeq_epi8_mask(src, dots);
+    return (uint64_t)_mm512_cmpeq_epi8_mask(src, dots);
 
 #elif defined(__AVX2__)
     const __m256i dots = _mm256_set1_epi8('.');
@@ -4208,7 +4211,7 @@ uint64_t whichIsNotDots64(const char * p) {
     else
         src = _mm512_loadu_si512((const __m512i *)p);
 
-    return (uint32_t)_mm512_cmpneq_epi8_mask(src, dots);
+    return (uint64_t)_mm512_cmpneq_epi8_mask(src, dots);
 
 #elif defined(__AVX2__)
     const __m256i dots = _mm256_set1_epi8('.');
