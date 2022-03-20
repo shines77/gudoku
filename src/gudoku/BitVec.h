@@ -39,8 +39,8 @@
 //#undef __SSE4_1__
 //#undef __AVX2__
 
-#undef __AVX512VL__
-#undef __AVX512F__
+//#undef __AVX512VL__
+//#undef __AVX512F__
 
 #endif //_MSC_VER
 
@@ -3022,15 +3022,15 @@ struct BitVec16x16_AVX {
     }
 
     inline BitVec08x16 getLow() const {
-#if 1
+#if 0
+        return _mm256_extractf128_si256(this->m256, 0);
+#else
         __m128i low128 = _mm256_castsi256_si128(this->m256);
         return low128;
-#else
-        return _mm256_extracti128_si256(this->m256, 0);
 #endif
     }
 
-    inline BitVec08x16 getHigh() const {       
+    inline BitVec08x16 getHigh() const {
         return _mm256_extractf128_si256(this->m256, 1);
     }
 
