@@ -116,7 +116,6 @@ size_t read_sudoku_board(Board & board, char line[256])
                 board.cells[pos] = '.';
             assert(pos < Sudoku::BoardSize);
             pos++;
-            
         }
         else if ((val == '.') || (val == ' ') || (val == '-')) {
             board.cells[pos] = '.';
@@ -232,7 +231,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     Solver solver;
 
     Board solution;
-    solution.clear();    
+    solution.clear();
 
     test::StopWatch sw;
     sw.start();
@@ -292,7 +291,7 @@ void run_all_benchmark(const char * filename)
     bm_puzzleTotal = load_sudoku_puzzles(filename, bm_puzzles);
 
     test::CPU::WarmUp cpuWarmUp(1000);
-    
+
     static const int kSolutionMode = (LimitSolutions == 1) ? 1: 0;
 
 #if !defined(_DEBUG)
