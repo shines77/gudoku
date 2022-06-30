@@ -16,31 +16,66 @@
 #include <cstddef>
 #include <bitset>
 #include <cstring>          // For std::memset()
-#include <initializer_list>
 #include <type_traits>
 
 #include "gudoku/BitUtils.h"
 
+#if defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) \
+ || defined (_M_IX86) || defined(__i386__)
+
 #if defined(_MSC_VER)
 
+#ifndef __MMX__
 #define __MMX__
-#define __SSE__
-#define __SSE2__
-#define __SSE3__
-#define __SSSE3__
-#define __SSE4A__
-#define __SSE4a__
-#define __SSE4_1__
-#define __SSE4_2__
+#endif
 
+#ifndef __SSE__
+#define __SSE__
+#endif
+
+#ifndef __SSE2__
+#define __SSE2__
+#endif
+
+#ifndef __SSE3__
+#define __SSE3__
+#endif
+
+#ifndef __SSSE3__
+#define __SSSE3__
+#endif
+
+#ifndef __SSE4A__
+#define __SSE4A__
+#endif
+
+#ifndef __SSE4a__
+#define __SSE4a__
+#endif
+
+#ifndef __SSE4_1__
+#define __SSE4_1__
+#endif
+
+#ifndef __SSE4_2__
+#define __SSE4_2__
+#endif
+
+#ifndef __AVX__
 #define __AVX__
+#endif
+
+#ifndef __AVX2__
 #define __AVX2__
+#endif
+
+//#define __AVX512BW__
+//#define __AVX512VL__
+//#define __AVX512F__
 
 //#undef __SSE4_1__
 //#undef __AVX2__
-
-//#undef __AVX512VL__
-//#undef __AVX512F__
 
 #endif //_MSC_VER
 
@@ -89,21 +124,31 @@
 // For SSE2, SSE3, SSSE3, SSE 4.1, AVX, AVX2
 #if defined(_MSC_VER)
 #include <intrin.h>
-#include "gudoku/msvc_x86intrin.h"
-#include <immintrin.h>
 #else
 #include <x86intrin.h>
-#include "gudoku/msvc_x86intrin.h"
-#include <avxintrin.h>
+#endif //_MSC_VER
+
+#include "gudoku/x86_intrin.h"
 
 /////////////////////////////////////////////
+
+#if defined (_M_IX86) || defined(__i386__)
 
 #ifndef _mm_setr_epi64x
-#define _mm_setr_epi64x(high, low) \
-        _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
+#define _mm_setr_epi64x(high, low)  _mm_setr_epi64(high, low)
 #endif
 
+#else
+
+#ifndef _mm_setr_epi64x
+#define _mm_setr_epi64x(high, low)  _mm_set_epi64x(low, high)
+#endif
+
+#endif // _M_IX86 || __i386__
+
 /////////////////////////////////////////////
+
+#if !defined(_MSC_VER)
 
 #ifndef _mm256_set_m128
 #define _mm256_set_m128(hi, lo) \
@@ -150,7 +195,7 @@
 #define _mm256_test_mix_ones_zeros(mask, val) \
         _mm256_testnzc_si256((mask), (val))
 #endif
-#endif // _MSC_VER
+#endif // !_MSC_VER
 
 /////////////////////////////////////////////
 
@@ -242,7 +287,7 @@
 // for functions like extract below where we use switches to determine which immediate to use
 // we'll assume only valid values are passed and omit the default, thereby allowing the compiler's
 // assumption of defined behavior to optimize away a branch.
-#if !defined(_MSC_VER)
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreturn-type"
 #endif
@@ -308,14 +353,27 @@ struct Consts {
 
 const Consts consts{};
 
+template <typename T = void>
 static inline
-bool check_alignment(void * address, size_t alignment)
+bool check_alignment(T * address, size_t alignment)
 {
     uintptr_t ptr = (uintptr_t)address;
-    assert(alignment > 0 );
-    assert((alignment & (alignment - 1)) == 0);
+    JSTD_ASSERT(alignment > 0);
+    JSTD_ASSERT((alignment & (alignment - 1)) == 0);
     return ((ptr & (alignment - 1)) == 0);
 }
+
+#if defined(JSTD_IS_X86_I386)
+
+#ifndef _mm_extract_epi64
+#define _mm_extract_epi64(src, index)           SSE::mm_extract_epi64<(index)>(src);
+#endif
+
+#ifndef _mm_insert_epi64
+#define _mm_insert_epi64(target, index, value)  SSE::mm_insert_epi64<(index)>((src), (value));
+#endif
+
+#endif // JSTD_IS_X86_I386
 
 struct SSE {
 
@@ -333,7 +391,65 @@ uint32_t mm_cvtsi128_si32_high(__m128i m128)
     return (low32 >> 16U);
 }
 
+#if defined(JSTD_IS_X86_I386)
+
+template <int index>
+static inline
+int64_t mm_extract_epi64(__m128i src)
+{
+    uint32_t low  = _mm_extract_epi32(src, index * 2);
+    uint32_t high = _mm_extract_epi32(src, index * 2 + 1);
+    uint64_t result = ((uint64_t)high << 32) | low;
+    return (int64_t)result;
+}
+
+template <int index>
+static inline
+__m128i mm_insert_epi64(__m128i target, int64_t value)
+{
+    uint32_t low  = (uint32_t)((uint64_t)value & 0xFFFFFFFFul)
+    uint32_t high = (uint32_t)((uint64_t)value >> 32);
+    __m128i result;
+    result = _mm_extract_epi32(target, low, index * 2);
+    result = _mm_extract_epi32(result, high, index * 2 + 1);
+    return result;
+}
+
+#endif // JSTD_IS_X86_I386
+
 }; // SSE Wrapper
+
+#if defined(_MSC_VER)
+
+//
+// Missing in MSVC (before 2017)
+//
+
+#ifndef _mm256_extract_epi16
+#define _mm256_extract_epi16(src, index)            AVX::template mm256_extract_epi16<(index)>(src)
+#endif
+
+#ifndef _mm256_insert_epi16
+#define _mm256_insert_epi16(target, value, index)   AVX::template mm256_insert_epi16<(index)>((target), (value))
+#endif
+
+#ifndef _mm256_extract_epi32
+#define _mm256_extract_epi32(src, index)            AVX::template mm256_extract_epi32<(index)>(src)
+#endif
+
+#ifndef _mm256_insert_epi32
+#define _mm256_insert_epi32(target, value, index)   AVX::template mm256_insert_epi32<(index)>((target), (value))
+#endif
+
+#ifndef _mm256_extract_epi64
+#define _mm256_extract_epi64(src, index)            AVX::template mm256_extract_epi64<(index)>(src)
+#endif
+
+#ifndef _mm256_insert_epi64
+#define _mm256_insert_epi64(target, value, index)   AVX::template mm256_insert_epi64<(index)>((target), (value))
+#endif
+
+#endif // _MSC_VER
 
 struct AVX {
 
@@ -355,6 +471,7 @@ template <int index>
 static inline
 int mm256_extract_epi16(__m256i src)
 {
+    static_assert((index >= 0 && index < 16), "AVX::mm256_extract_epi16(): index must be [0-15]");
 #if defined(__AVX2__)
     if (index >= 0 && index < 8) {
         __m128i low128 = _mm256_castsi256_si128(src);
@@ -462,6 +579,115 @@ __m256i mm256_insert_epi16_gcc(__m256i target, int value)
     __m256i result = _mm256_insertf128_si256(target, mixed128, (index >> 3));
     return result;
 }
+
+template <int index>
+static inline
+int mm256_extract_epi32(__m256i src)
+{
+    static_assert((index >= 0 && index < 8), "AVX::mm256_extract_epi32(): index must be [0-7]");
+#if defined(__AVX__) && defined(__SSE4_1__)
+    // Maybe faster than the below version
+    if (index == 0) {
+        __m128i m128 = _mm256_castsi256_si128(src);
+        return _mm_cvtsi128_si32(m128);     // SSE2
+    }
+    else if (index >= 1 && index < 4) {
+        __m128i m128 = _mm256_castsi256_si128(src);
+        return _mm_extract_epi32(m128, index % 4);
+    }
+    else if (index == 4) {
+        __m128i m128 = _mm256_extractf128_si256(src, index >> 2);
+        return _mm_cvtsi128_si32(m128);     // SSE2
+    }
+    else if (index >= 5 && index < 8) {
+        __m128i m128 = _mm256_extractf128_si256(src, index >> 2);
+        return _mm_extract_epi32(m128, index % 4);
+    }
+    else {
+        assert(false);
+    }
+#elif defined(__AVX2__)
+    if (index >= 0 && index < 4) {
+        __m128i low128 = _mm256_castsi256_si128(src);
+        int result = _mm_extract_epi32(low128, (index % 4));
+        return result;
+    }
+    else if (index >= 4 && index < 8) {
+        __m128i high128 = _mm256_extracti128_si256(src, (index >> 2));
+        int result = _mm_extract_epi32(high128, (index % 4));
+        return result;
+    }
+    else {
+        assert(false);
+    }
+#elif defined(__AVX__)
+    if (index >= 0 && index < 4) {
+        __m128i low128 = _mm256_castsi256_si128(src);
+        int result = _mm_extract_epi32(low128, (index % 8));
+        return result;
+    }
+    else if (index >= 4 && index < 8) {
+        __m128i high128 = _mm256_extractf128_si256(src, (index >> 2));
+        int result = _mm_extract_epi32(high128, (index % 4));
+        return result;
+    }
+    else {
+        assert(false);
+    }
+#else
+    // This is gcc original version
+    __m128i partOfExtract = _mm256_extractf128_si256(src, (index >> 2));
+    int result = _mm_extract_epi32(partOfExtract, (index % 4));
+    return result;
+#endif // __AVX2__
+    return 0;
+}
+
+template <int index>
+static inline
+__m256i mm256_insert_epi32(__m256i target, int64_t value)
+{
+    static_assert((index >= 0 && index < 8), "AVX::mm256_insert_epi32(): index must be [0-7]");
+    __m256i result;
+#if defined(__AVX2__)
+    if (index == 0) {
+        __m128i low32 = _mm_cvtsi32_si128(value);
+        __m256i low256 = _mm256_castsi128_si256(low32);
+        result = _mm256_blend_epi32(target, low256, 0b00000001);
+    }
+    else if (index >= 1 && index < 8) {
+        static const int blend_mask = 0b00000001 << index;
+        __m128i low32 = _mm_cvtsi32_si128(value);
+        __m256i repeat256 = _mm256_broadcastq_epi64(low32);
+        result = _mm256_blend_epi32(target, repeat256, blend_mask);
+    }
+    else {
+        assert(false);
+    }
+#elif defined(__AVX__)
+    if (index >= 0 && index < 4) {
+        __m128i low128 = _mm256_castsi256_si128(target);
+        __m128i low128_insert = _mm_insert_epi32(low128, value, index % 4);
+        result = _mm256_insertf128_si256 (target, low128_insert, index >> 2);
+    }
+    else if (index >= 4 && index < 8) {
+        __m128i high128 = _mm256_extractf128_si256(target, index >> 2);
+        __m128i high128_insert = _mm_insert_epi32(high128, value, index % 4);
+        result = _mm256_insertf128_si256 (target, high128_insert, index >> 2);
+    }
+    else {
+        assert(false);
+    }
+#else
+    // This is original version
+    __m128i partOfInsert = _mm256_extractf128_si256(target, index >> 2);
+    partOfInsert = _mm_insert_epi32(partOfInsert, value, index % 4);
+    result = _mm256_insertf128_si256 (target, partOfInsert, index >> 2);
+#endif
+    return result;
+}
+
+#if defined(JSTD_IS_X86_64)
 
 //
 // See: /gcc/config/i386/avxintrin.h   (gcc 9.x)
@@ -583,39 +809,37 @@ __m256i mm256_insert_epi64(__m256i target, int64_t value)
     return result;
 }
 
-#if defined(_MSC_VER)
+#endif // JSTD_IS_X86_64
 
-//
-// Missing in MSVC (before 2017)
-//
+#if defined(JSTD_IS_X86_I386)
 
-#ifndef _mm256_extract_epi16
-#define _mm256_extract_epi16(src, index)            AVX::template mm256_extract_epi16<index>(src)
-#endif
+template <int index>
+static inline
+int64_t mm256_extract_epi64(__m256i src)
+{
+    uint32_t low  = _mm256_extract_epi32(src, index * 2);
+    uint32_t high = _mm256_extract_epi32(src, index * 2 + 1);
+    uint64_t result = ((uint64_t)high << 32) | low;
+    return (int64_t)result;
+}
 
-#ifndef _mm256_insert_epi16
-#define _mm256_insert_epi16(target, value, index)   AVX::template mm256_insert_epi16<index>(target, value)
-#endif
+template <int index>
+static inline
+__m256i mm256_insert_epi64(__m256i target, int64_t value)
+{
+    uint32_t low  = (uint32_t)((uint64_t)value & 0xFFFFFFFFul)
+    uint32_t high = (uint32_t)((uint64_t)value >> 32);
+    __m256i result;
+    result = _mm256_insert_epi32(target, low, index * 2);
+    result = _mm256_insert_epi32(result, high, index * 2 + 1);
+    return result;
+}
 
-#ifndef _mm256_extract_epi64
-#define _mm256_extract_epi64(src, index)            AVX::template mm256_extract_epi64<index>(src)
-#endif
-
-#ifndef _mm256_insert_epi64
-#define _mm256_insert_epi64(target, value, index)   AVX::template mm256_insert_epi64<index>(target, value)
-#endif
-
-#endif // _MSC_VER
+#endif // JSTD_IS_X86_I386
 
 #endif // __AVX__
 
 }; // AVX Wrapper
-
-struct AVX2 {
-
-// TODO:
-
-}; // AVX2 Wrapper
 
 struct AVX512 {
 
@@ -1020,7 +1244,7 @@ struct BitVec08x16 {
     }
 
     //
-    // 
+    //
     // It is mixed by zeros and ones
     //
     //   ((     a[127:0]  And b[127:0]) != 0) -> hasIntersects()
@@ -1697,7 +1921,7 @@ struct BitVec08x16 {
             min_num = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
 #endif
-    }   
+    }
 
     template <size_t MaxLength>
     int32_t min_i16() const {
@@ -2945,7 +3169,7 @@ struct BitVec16x16_AVX {
 
     // non-explicit conversions intended
     BitVec16x16_AVX(const BitVec16x16_AVX & src) noexcept : m256(src.m256) {}
-    
+
     BitVec16x16_AVX(const BitVec08x16 & low, const BitVec08x16 & high) noexcept
         : m256(_mm256_setr_m128i(low.m128, high.m128)) {}
 
@@ -4284,8 +4508,10 @@ typedef BitVec16x16_SSE     BitVec16x16;
 
 } // namespace gudoku
 
-#if !defined(_MSC_VER)
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+
+#endif // _M_X64 || __amd64__ || _M_IX86 || __i386__
 
 #endif // GUDOKU_BITVEC_H

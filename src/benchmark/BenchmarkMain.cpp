@@ -306,7 +306,7 @@ int main(int argc, char * argv[])
     const char * filename = nullptr;
     const char * out_file = nullptr;
     int limit_solution = 0;
-    UNUSED_VARIANT(out_file);
+    UNUSED_VARIABLE(out_file);
     if (argc > 3) {
         filename = argv[1];
         limit_solution = atoi(argv[2]);

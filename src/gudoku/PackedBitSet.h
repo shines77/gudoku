@@ -22,7 +22,7 @@
 
 #include "gudoku/BitUtils.h"
 #include "gudoku/BitSet.h"
-#include "gudoku/PowerOf2.h"
+#include "gudoku/Power2.h"
 
 namespace gudoku {
 

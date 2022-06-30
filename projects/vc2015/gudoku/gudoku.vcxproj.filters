@@ -18,16 +18,10 @@
     <ClInclude Include="..\..\..\src\gudoku\gudoku.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\gudoku\msvc_x86intrin.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\gudoku\StopWatch.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gudoku\CPUWarmUp.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\gudoku\PowerOf2.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gudoku\stddef.h">
@@ -64,6 +58,15 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gudoku\SudokuTable.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gudoku\x86_intrin.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gudoku\config.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gudoku\Power2.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

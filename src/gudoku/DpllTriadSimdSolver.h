@@ -866,7 +866,7 @@ private:
     static const uint32_t NONE = UINT32_MAX;
 
     static
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     std::pair<uint32_t, BitVec08x16>
     chooseBandAndValueToBranch(const State & state) {
         uint32_t best_band = NONE, best_band_count = NONE;
@@ -937,7 +937,7 @@ private:
     }
 
     template <int vertical>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void branchOnBandAndValue(int band_idx, const BitVec08x16 & value_mask, State & state) {
         Band & band = state.bands[vertical][band_idx];
         // We enter with two or more possible configurations for this value
@@ -990,7 +990,7 @@ private:
     }
 
     static
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void initClue(const char * puzzle, State & state, uint32_t pos) {
         const BoxIndexing & indexing = tables.box_indexing[pos];
         int8_t digit = (int8_t)puzzle[pos];
@@ -1022,7 +1022,7 @@ private:
     }
 
     static
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     bool initSudoku(const char * puzzle, State & state) {
 #if USE_ALIGN_AS
         state.init();
@@ -1056,7 +1056,7 @@ private:
     }
 
     static
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void extractMiniRow(uint64_t minirow, int minirow_base, char * solution) {
 #if 1
         IntVec64 * pUInt64 = (IntVec64 *)&minirow;
@@ -1076,7 +1076,7 @@ private:
 
 #if 1
     static
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void extractSolution(const State & state, char * solution) {
         for (int box_idx = 0; box_idx < 9; box_idx++) {
             const Box & box = state.boxes[box_idx];
@@ -1092,7 +1092,7 @@ private:
     }
 #else
     static
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void extractSolution(const State & state, char * solution) {
         IntVec4x64 box_minirows;
         for (int box_idx = 0; box_idx < 9; box_idx++) {
