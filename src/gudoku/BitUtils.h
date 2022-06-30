@@ -1,6 +1,6 @@
 
-#ifndef JSTD_BITUTILS_H
-#define JSTD_BITUTILS_H
+#ifndef GUDOKU_BITUTILS_H
+#define GUDOKU_BITUTILS_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -440,6 +440,6 @@ struct BitUtils {
     }
 };
 
-} // namespace jstd
+} // namespace gudoku
 
-#endif // JSTD_BITUTILS_H
+#endif // GUDOKU_BITUTILS_H
