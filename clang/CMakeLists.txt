@@ -5,8 +5,8 @@ project(gudoku)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 message("-------------- Env ---------------")
-message("  CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
-message("  CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+message("  CMAKE_SOURCE_DIR:   ${CMAKE_SOURCE_DIR}")
+message("  CMAKE_BINARY_DIR:   ${CMAKE_BINARY_DIR}")
 message("  PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 message("  PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
 message("----------------------------------")
@@ -22,18 +22,23 @@ if (NOT MSVC)
 
     ## For C_FLAGS
     ## -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mavx -mavx2 -mavx512vl -mavx512f
-    set(CMAKE_C_COMPILER      "/usr/bin/clang")
-    set(CMAKE_C_FLAGS_DEFAULT "${CMAKE_C_FLAGS} -std=c89 -march=native -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_DEFAULT} -O3 -DNDEBUG")
-    set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+    set(CMAKE_C_COMPILER                "/usr/bin/clang")
+    set(CMAKE_C_FLAGS_DEFAULT           "${CMAKE_C_FLAGS} -std=c99 -march=native -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC")
+    set(CMAKE_C_FLAGS_RELEASE           "${CMAKE_C_FLAGS_DEFAULT} -O3 -DNDEBUG")
+    set(CMAKE_C_FLAGS_DEBUG             "${CMAKE_C_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+    set(CMAKE_C_FLAGS_MINSIZEREL        "${CMAKE_C_FLAGS_DEFAULT} -Os -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO    "${CMAKE_C_FLAGS_DEFAULT} -O2 -g")
+
 
     ## For CXX_FLAGS
     ## -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mavx -mavx2 -mavx512vl -mavx512f
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
-    set(CMAKE_CXX_COMPILER      "/usr/bin/clang++")
-    set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libstdc++ -march=native -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+    set(CMAKE_CXX_COMPILER              "/usr/bin/clang++")
+    set(CMAKE_CXX_FLAGS_DEFAULT         "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libstdc++ -march=native -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC")
+    set(CMAKE_CXX_FLAGS_RELEASE         "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG           "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL      "${CMAKE_CXX_FLAGS_DEFAULT} -Os -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_DEFAULT} -O2 -g")
 
     set(CMAKE_AR        "/usr/bin/llvm-ar")
     set(CMAKE_LINKER    "/usr/bin/llvm-link")
