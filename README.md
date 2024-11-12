@@ -22,9 +22,11 @@ tdoku 作者是 [t-dillon](https://github.com/t-dillon)，一个原理非常特�
 
 但在求解较简单的数独时，则是 Rust 写的 rust-sudoku 更快，我用 C++ 写的 [gz_sudoku](https://github.com/shines77/gz_sudoku/) 比 rust-sudoku 更快一些，约快 5% 。其中 rust-sudoku 和 [gz_sudoku](https://github.com/shines77/gz_sudoku/) 都是在国人 JCZ 写的 JCZSolve 的基础上修改而来的。
 
+注：tdoku 只能在类 Linux 环境下编译。
+
 Git: [https://github.com/t-dillon/tdoku](https://github.com/t-dillon/tdoku)
 
-原理: [Nerd Sniped: A Sudoku Story](https://t-dillon.github.io/tdoku/)
+原理文档: [Nerd Sniped: A Sudoku Story](https://t-dillon.github.io/tdoku/)
 
 ## 基准测试
 
@@ -32,7 +34,7 @@ Git: [https://github.com/t-dillon/tdoku](https://github.com/t-dillon/tdoku)
 
 请先选择或安装 gcc 和 clang 的不同版本。
 
-- **GCC**
+- **gcc**
 
 编译：
 
@@ -51,7 +53,7 @@ make
 
 - **clang**
 
-请切换到 ./clang 目录下，用 CMake 来编译。
+请先切换到 ./clang 目录下，再用 CMake 来构建 makefile 和编译。
 
 ```bash
 cd ./clang
@@ -69,7 +71,7 @@ make
 
 ### 2. 在 Windows 下
 
-切换到 `.\bin\vc2015\x64-Release` 目录下，执行下面命令。
+请切换到 `.\bin\vc2015\x64-Release` 目录下，执行下面命令。
 
 运行测试：
 
