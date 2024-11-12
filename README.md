@@ -6,7 +6,7 @@
 
 特色：
 
-`BitVec.h`: 一个跨平台，支持 SSE, SSE2, AVX, AVX2 和 AVX512 等 SIMD 指令的向量库。[点这里查看](./blob/master/src/gudoku/BitVec.h)
+`BitVec.h`: 一个跨平台，支持 SSE, SSE2, AVX, AVX2 和 AVX512 等 SIMD 指令的向量库。[点这里查看](./src/gudoku/BitVec.h)
 
 包含以下类：
 
@@ -30,7 +30,7 @@ Git: [https://github.com/t-dillon/tdoku](https://github.com/t-dillon/tdoku)
 
 ## 测试集
 
-测试的数独集放在 `./data` 目录下：
+数独的测试集放在 `./data` 目录下：
 
 ```bash
 # 这两个测试集都是所有剩17个格子数独的集合，属于是比较简单的数独
