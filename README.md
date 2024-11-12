@@ -20,7 +20,7 @@
 
 tdoku 作者是 [t-dillon](https://github.com/t-dillon)，一个原理非常特别的数独求解程序，使用了 SIMD 技术，在求解较难的数独时速度非常快。
 
-但在求解较简单的数独时，则是 Rust 写的 rust-sudoku 更快，我用 C++ 写的 [gz_sudoku](https://github.com/shines77/gz_sudoku/) 比 rust-sudoku 更快一些，约快 5% 。其中 rust-sudoku 和 [gz_sudoku](https://github.com/shines77/gz_sudoku/) 都是在国人 JCZ 写的 JCZSolve 的基础上修改而来的。
+但在求解较简单的数独时，则是 Rust 写的 rust-sudoku 更快，我用 C++ 写的 [gz_sudoku](https://github.com/shines77/gz_sudoku/) 比 [rust-sudoku](https://github.com/Emerentius/sudoku) 更快一些，约快 5% 。其中 [rust-sudoku](https://github.com/Emerentius/sudoku) 和 [gz_sudoku](https://github.com/shines77/gz_sudoku/) 都是在国人 [zhouyundong_2012](http://forum.enjoysudoku.com/member3701.html) 写的 JCZSolve 的基础上修改而来的。
 
 注：tdoku 只能在类 Linux 环境下编译。
 
