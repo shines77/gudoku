@@ -28,6 +28,20 @@ Git: [https://github.com/t-dillon/tdoku](https://github.com/t-dillon/tdoku)
 
 原理文档: [Nerd Sniped: A Sudoku Story](https://t-dillon.github.io/tdoku/)
 
+## 测试集
+
+测试的数独集放在 `./data` 目录下：
+
+```bash
+# 这两个测试集都是所有剩17个格子数独的集合，属于是比较简单的数独
+# 这两个文件基本相同，但稍微有一点差异，只测试其中一个即可（建议）
+./data/puzzles2_17_clue
+./data/puzzles_17_clue_49151
+
+# 这个是最难的 1905 个数独的测试集，属于是比较困难的数独
+./data/puzzles5_forum_hardest_1905_11+
+```
+
 ## 基准测试
 
 ### 1. 在 Linux 下：
@@ -80,3 +94,7 @@ make
 .\benchmark.exe ..\..\..\data\puzzles_17_clue_49151
 .\benchmark.exe ..\..\..\data\puzzles5_forum_hardest_1905_11+
 ```
+
+## LeetCode
+
+在 LeetCode 上，也有一道关于数独的题目：[LeetCode problem 37: SudokuSolver](https://leetcode.cn/problems/sudoku-solver/) 。
