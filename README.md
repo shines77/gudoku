@@ -2,7 +2,7 @@
 
 ## 简介
 
-本程序根据世界上最快的数独求解程序 [tdoku](https://github.com/t-dillon/tdoku) 改写，速度相当，但可以在 Windows 上的 VC++ 上编译。
+本程序基于世界上最快的数独求解程序 [tdoku](https://github.com/t-dillon/tdoku) 改写，速度相当，但可以在 Windows 上的 VC++ 上编译。
 
 特色：
 
